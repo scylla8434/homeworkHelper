@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const styles = {
   wrapper: {
@@ -344,8 +347,13 @@ function PricingPage() {
   const [yearly, setYearly] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [subscribeError, setSubscribeError] = useState("");
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const proCardRef = useRef(null);
   const [cardVisible, setCardVisible] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
 
   useEffect(() => {
     setTimeout(() => {
@@ -370,22 +378,54 @@ function PricingPage() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [showModal]);
 
+  // --- M-Pesa subscribe logic ---
   const handleSubscribe = () => {
-    setShowModal(true);
-    setShowToast(true);
+    setPhoneInput("");
+    setPhoneError("");
+    setSubscribeError("");
+    setShowPhoneModal(true);
   };
 
-  const proPrice = yearly ? 49.99 : 4.99;
+  const submitPhone = async () => {
+    setPhoneError("");
+    setSubscribeError("");
+    if (!/^2547\d{8}$/.test(phoneInput)) {
+      setPhoneError("Enter a valid M-Pesa phone number (format 2547XXXXXXXX)");
+      return;
+    }
+    setSubscribing(true);
+    setShowModal(true);
+    setShowPhoneModal(false);
+    try {
+      const userId = localStorage.getItem('userId');
+      const plan = yearly ? 'yearly' : 'monthly';
+      const res = await axios.post(`${API_URL}/api/subscribe`, { userId, phone: phoneInput, plan });
+      setShowToast(true);
+      setShowModal(true);
+      setSubscribeError("");
+    } catch (err) {
+      setSubscribeError(err.response?.data?.message || err.message || 'Subscription failed. Please try again.');
+      setShowModal(false);
+    }
+    setSubscribing(false);
+  };
+
+  // KES pricing and pay-per-use
+  const proPrice = yearly ? 4999 : 499;
   const proLabel = yearly ? 'per year' : 'per month';
   const proDesc = yearly
     ? '• Unlimited questions\n• Priority AI answers\n• Image & math support\n• Priority support\n• 2 months free!'
     : '• Unlimited questions\n• Priority AI answers\n• Image & math support\n• Priority support';
+  const payPerUsePrice = 10; // KES per question
 
   return (
     <div style={styles.wrapper} aria-live="polite" aria-label="Pricing and subscription plans">
       <div style={styles.bgDecor}></div>
       <div style={styles.bgDecor2}></div>
       <div style={styles.title}>Pricing & Subscription</div>
+      <div style={{textAlign:'center', marginBottom: 18, color:'#6366f1', fontWeight:600, fontSize:18}}>
+        <span>Pay-per-use: <span style={{fontWeight:800}}>Ksh {payPerUsePrice}</span> per question</span>
+      </div>
       <div style={styles.toggleWrap}>
         <span id="toggle-label" style={{ fontWeight: 600, color: '#6366f1' }}>Billing:</span>
         <div
@@ -429,7 +469,7 @@ function PricingPage() {
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="4" fill="#60a5fa"/><path d="M7 9h10M7 13h6" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
             </div>
             <div style={styles.planTitle}>Free</div>
-            <div style={styles.planPrice}>$0</div>
+            <div style={styles.planPrice}>Ksh 0</div>
             <div style={styles.planDesc}>• 10 questions/month<br/>• Basic AI answers<br/>• Image-to-text OCR<br/>• Email support</div>
           </div>
           <div
@@ -452,7 +492,7 @@ function PricingPage() {
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="4" fill="#6366f1"/><path d="M7 9h10M7 13h6" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
             </div>
             <div style={styles.planTitle}>Pro</div>
-            <div style={styles.planPrice}>${proPrice}<span style={{ fontSize: 16, fontWeight: 400 }}>/ {yearly ? 'yr' : 'mo'}</span></div>
+            <div style={styles.planPrice}>Ksh {proPrice}<span style={{ fontSize: 16, fontWeight: 400 }}>/ {yearly ? 'yr' : 'mo'}</span></div>
             <div style={styles.planDesc}>{proDesc.split('\n').map((line, i) => <div key={i}>{line}</div>)}</div>
             <button
               style={{ ...styles.button, ...(btnHover ? styles.buttonHover : {}) }}
@@ -461,8 +501,9 @@ function PricingPage() {
               onMouseLeave={() => setBtnHover(false)}
               onClick={handleSubscribe}
               tabIndex={0}
+              disabled={subscribing}
             >
-              Subscribe
+              {subscribing ? 'Subscribing...' : 'Subscribe'}
             </button>
           </div>
         </div>
@@ -503,17 +544,80 @@ function PricingPage() {
           <div key={i} style={styles.badge}><span aria-hidden="true">{b.icon}</span> {b.label}</div>
         ))}
       </div>
-      {/* Modal for subscription */}
-      {showModal && (
-        <div style={styles.modalOverlay} role="dialog" aria-modal="true" aria-label="Subscription successful">
+      {/* Phone Number Modal */}
+      {showPhoneModal && (
+        <div style={styles.modalOverlay} role="dialog" aria-modal="true" aria-label="Enter phone number">
           <div style={styles.modal}>
-            <button style={styles.closeModalBtn} aria-label="Close" onClick={() => setShowModal(false)}>&times;</button>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🎉</div>
-            <div style={{ fontWeight: 700, fontSize: 20, color: '#6366f1', marginBottom: 8 }}>Subscription Successful!</div>
-            <div style={{ fontSize: 16, color: '#222', marginBottom: 12 }}>
-              Thank you for subscribing to the Pro plan.<br />You now have full access to all features.
-            </div>
-            <button style={{ ...styles.button, marginTop: 8 }} onClick={() => setShowModal(false)} autoFocus>Close</button>
+            <button style={styles.closeModalBtn} aria-label="Close" onClick={() => setShowPhoneModal(false)}>&times;</button>
+            <div style={{ fontWeight: 700, fontSize: 20, color: '#6366f1', marginBottom: 8 }}>Enter M-Pesa Phone Number</div>
+            <input
+              type="text"
+              value={phoneInput}
+              onChange={e => setPhoneInput(e.target.value)}
+              placeholder="2547XXXXXXXX"
+              style={{
+                width: '100%', padding: 12, fontSize: 16, borderRadius: 8, border: '1.5px solid #6366f1', marginBottom: 12, outline: 'none', textAlign: 'center'
+              }}
+              autoFocus
+              maxLength={12}
+            />
+            {phoneError && <div style={{ color: '#ef4444', marginBottom: 8 }}>{phoneError}</div>}
+            <button
+              style={{ ...styles.button, marginTop: 0, width: '100%' }}
+              onClick={submitPhone}
+              disabled={subscribing}
+            >
+              {subscribing ? 'Processing...' : 'Continue'}
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Subscription Modal (Loading/Success) */}
+      {showModal && !subscribeError && (
+        <div style={styles.modalOverlay} role="dialog" aria-modal="true" aria-label={subscribing ? "Subscription in progress" : "Subscription successful"}>
+          <div style={styles.modal}>
+            {subscribing ? (
+              <>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>📲</div>
+                <div style={{ fontWeight: 700, fontSize: 20, color: '#6366f1', marginBottom: 8 }}>Check your phone</div>
+                <div style={{ fontSize: 16, color: '#222', marginBottom: 12 }}>
+                  An M-Pesa prompt has been sent to your phone.<br />Please complete the payment to activate your subscription.
+                </div>
+                <div style={{ margin: '18px 0' }}>
+                  <span style={{
+                    display: 'inline-block',
+                    width: 32,
+                    height: 32,
+                    border: '4px solid #e0e7ef',
+                    borderTop: '4px solid #6366f1',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }}></span>
+                </div>
+              </>
+            ) : (
+              <>
+                <button style={styles.closeModalBtn} aria-label="Close" onClick={() => setShowModal(false)}>&times;</button>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>🎉</div>
+                <div style={{ fontWeight: 700, fontSize: 20, color: '#6366f1', marginBottom: 8 }}>Subscription Successful!</div>
+                <div style={{ fontSize: 16, color: '#222', marginBottom: 12 }}>
+                  Thank you for subscribing to the Pro plan.<br />You now have full access to all features.
+                </div>
+                <button style={{ ...styles.button, marginTop: 8 }} onClick={() => setShowModal(false)} autoFocus>Close</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Error Modal */}
+      {subscribeError && (
+        <div style={styles.modalOverlay} role="dialog" aria-modal="true" aria-label="Subscription error">
+          <div style={styles.modal}>
+            <button style={styles.closeModalBtn} aria-label="Close" onClick={() => setSubscribeError("")}>&times;</button>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>❌</div>
+            <div style={{ fontWeight: 700, fontSize: 20, color: '#ef4444', marginBottom: 8 }}>Subscription Failed</div>
+            <div style={{ fontSize: 16, color: '#222', marginBottom: 12 }}>{subscribeError}</div>
+            <button style={{ ...styles.button, background: '#ef4444', marginTop: 8 }} onClick={() => setSubscribeError("")}>Close</button>
           </div>
         </div>
       )}

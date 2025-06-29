@@ -156,6 +156,7 @@ export default function Header() {
   const [dropdownHover, setDropdownHover] = useState('');
   const dropdownRef = useRef();
   const userName = localStorage.getItem('userName') || localStorage.getItem('userEmail') || '';
+  const userAvatar = localStorage.getItem('userAvatar');
 
   // Close dropdown on outside click
   React.useEffect(() => {
@@ -204,7 +205,12 @@ export default function Header() {
       </button>
       <div style={{marginLeft:8, position:'relative'}} ref={dropdownRef}>
         <button style={styles.profileBtn} onClick={() => setDropdownOpen(o => !o)} aria-label="Profile menu" tabIndex={0}>
-          <span style={styles.avatar}>{userName[0]?.toUpperCase() || <span role="img" aria-label="user">👤</span>}</span>
+          {userAvatar ? (
+            <img src={userAvatar} alt="Avatar" style={styles.avatar} />
+          ) : (
+            <span style={styles.avatar}>{userName[0]?.toUpperCase() || <span role="img" aria-label="user">👤</span>}</span>
+          )}
+          <span style={{fontWeight:700, color:'#6366f1', fontSize:16, marginLeft:6, maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{userName}</span>
         </button>
         {dropdownOpen && (
           <div style={styles.dropdown}>
@@ -214,12 +220,7 @@ export default function Header() {
           </div>
         )}
       </div>
-      <style>{`
-        @keyframes fadeSlideDown {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+      <style>{`@keyframes fadeSlideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
     </header>
   );
 }

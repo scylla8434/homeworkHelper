@@ -81,6 +81,29 @@ function FeatureCard({ to, icon, title, desc }) {
 
 function HomePage() {
   const userName = localStorage.getItem('userName') || localStorage.getItem('userEmail') || 'User';
+  const testimonials = [
+    {
+      name: 'Sarah M.',
+      avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
+      text: 'Homework Helper has made evenings so much easier! The AI answers are spot on and the interface is beautiful.',
+    },
+    {
+      name: 'James L.',
+      avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+      text: 'I love the Pro plan. Unlimited questions and fast support. Highly recommended for busy parents!',
+    },
+    {
+      name: 'Priya S.',
+      avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
+      text: 'The OCR feature is a lifesaver for math homework. My kids are more independent now.',
+    },
+  ];
+  const pressLogos = [
+    { src: 'https://upload.wikimedia.org/wikipedia/commons/4/44/New_York_Times_logo_variation.jpg', alt: 'NY Times' },
+    { src: 'https://upload.wikimedia.org/wikipedia/commons/6/6a/TechCrunch_logo.svg', alt: 'TechCrunch' },
+    { src: 'https://upload.wikimedia.org/wikipedia/commons/0/08/Forbes_logo.svg', alt: 'Forbes' },
+    { src: 'https://upload.wikimedia.org/wikipedia/commons/0/0e/USA_Today_logo.svg', alt: 'USA Today' },
+  ];
   return (
     <div style={{ width: '100%', maxWidth: 1200, margin: '0 auto', padding: '2rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
       {/* Hero Section */}
@@ -109,6 +132,28 @@ function HomePage() {
           <li>Use visuals and real-life examples to explain concepts</li>
           <li>Stay positive—every question is a chance to learn!</li>
         </ul>
+      </div>
+      {/* Testimonials Section */}
+      <div style={{ width: '100%', maxWidth: 900, margin: '0 auto 32px auto', textAlign: 'center', zIndex: 1 }}>
+        <div style={{ fontWeight: 700, fontSize: 22, color: '#6366f1', marginBottom: 18 }}>What Parents Say</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 24 }}>
+          {testimonials.map((t, i) => (
+            <div key={i} style={{ background: '#fff', borderRadius: 14, boxShadow: '0 2px 8px 0 rgba(60,60,120,0.10)', padding: '22px 28px', margin: '0 12px', maxWidth: 320, minWidth: 220, fontSize: 16, color: '#222', fontStyle: 'italic', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <img src={t.avatar} alt={t.name} style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', margin: '0 auto 8px auto', display: 'block', boxShadow: '0 1px 4px 0 rgba(60,60,120,0.10)' }} />
+              <div style={{ fontWeight: 600, color: '#6366f1', marginBottom: 6 }}>{t.name}</div>
+              <div>“{t.text}”</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Press/Trust Logos Section */}
+      <div style={{ width: '100%', maxWidth: 900, margin: '0 auto 32px auto', textAlign: 'center', zIndex: 1 }}>
+        <div style={{ fontWeight: 600, fontSize: 17, color: '#6366f1', marginBottom: 10, letterSpacing: 1 }}>As featured in</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 32 }}>
+          {pressLogos.map((logo, i) => (
+            <img key={i} src={logo.src} alt={logo.alt} style={{ height: 32, width: 'auto', filter: 'grayscale(1) contrast(1.2)', opacity: 0.8, background: '#fff', borderRadius: 6, padding: 4, boxShadow: '0 1px 4px 0 rgba(60,60,120,0.06)' }} />
+          ))}
+        </div>
       </div>
     </div>
   );

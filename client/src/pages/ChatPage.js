@@ -199,6 +199,8 @@ function ChatPage() {
   const [error, setError] = useState(null);
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [reactions, setReactions] = useState({}); // {msgIndex: emoji}
+  const [aiTyping, setAiTyping] = useState(false);
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -213,6 +215,7 @@ function ChatPage() {
     if (!question.trim() && !image) return;
     setMessages((msgs) => [...msgs, { role: 'user', content: question, image: imagePreview, time: new Date() }]);
     setLoading(true);
+    setAiTyping(true);
     let imageUrl = null;
     let extractedText = '';
     try {
@@ -228,6 +231,8 @@ function ChatPage() {
       const userId = localStorage.getItem('userId') || 'demo';
       // If only image, use extracted text as question
       const chatQuestion = question.trim() ? question : extractedText;
+      // Simulate typing delay for AI
+      await new Promise(res => setTimeout(res, 900));
       const res = await axios.post(`${API_URL}/api/chat`, { question: chatQuestion, userId, imageUrl });
       setMessages((msgs) => [...msgs, { role: 'assistant', content: res.data.answer, time: new Date() }]);
     } catch (err) {
@@ -242,6 +247,7 @@ function ChatPage() {
         document.getElementById('imageInput').value = '';
       }
       setLoading(false);
+      setTimeout(() => setAiTyping(false), 600);
     }
   };
 
@@ -251,12 +257,20 @@ function ChatPage() {
     setImagePreview(file ? URL.createObjectURL(file) : null);
   };
 
+  const handleReaction = (msgIdx, emoji) => {
+    setReactions(prev => ({ ...prev, [msgIdx]: prev[msgIdx] === emoji ? null : emoji }));
+  };
+
+  // Remove emojis from reactions
+  // const reactionEmojis = ['👍', '❤️', '😂', '🤔', '👏'];
+  const reactionEmojis = [];
+
   return (
     <div style={styles.chatWrapper}>
       <div style={styles.chatBox} aria-live="polite" aria-label="Chat messages">
         <div style={styles.chatBgDecor}></div>
         {messages.map((msg, i) => (
-          <div key={i} style={styles.message(msg.role)}>
+          <div key={i} style={{...styles.message(msg.role), animation: 'fadeInMsg 0.4s, popIn 0.3s'}}>
             <div style={styles.avatar(msg.role)} aria-label={msg.role === 'user' ? 'User' : 'AI'}>
               {msg.role === 'user' ? (
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style={{display:'block'}}><circle cx="12" cy="8" r="4" fill="#fff"/><path d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4" fill="#fff"/></svg>
@@ -268,10 +282,45 @@ function ChatPage() {
               {msg.content}
               {msg.image && <div><img src={msg.image} alt="uploaded" style={styles.preview} /></div>}
               <div style={styles.bubbleMeta(msg.role)}>{msg.role === 'user' ? 'You' : 'AI'} • {formatTime(msg.time || new Date())}</div>
+              {/* Reactions */}
+              <div style={{ marginTop: 6, display: 'flex', gap: 6 }}>
+                {reactionEmojis.map(emoji => (
+                  <button
+                    key={emoji}
+                    style={{
+                      background: reactions[i] === emoji ? '#6366f1' : '#f3f4f6',
+                      color: reactions[i] === emoji ? '#fff' : '#6366f1',
+                      border: 'none',
+                      borderRadius: 8,
+                      fontSize: 18,
+                      padding: '2px 7px',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      transition: 'background 0.2s, color 0.2s',
+                    }}
+                    aria-label={`React with ${emoji}`}
+                    onClick={() => handleReaction(i, emoji)}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+                {reactions[i] && <span style={{ marginLeft: 4, fontSize: 16 }}>{reactions[i]}</span>}
+              </div>
             </div>
           </div>
         ))}
-        {loading && (
+        {/* Typing indicator */}
+        {aiTyping && (
+          <div style={styles.message('assistant')}>
+            <div style={styles.avatar('assistant')} aria-label="AI">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style={{display:'block'}}><rect x="4" y="4" width="16" height="16" rx="8" fill="#6366f1"/><path d="M8 10h8M8 14h5" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
+            </div>
+            <div style={{...styles.bubble('assistant'), fontStyle: 'italic', opacity: 0.7, display: 'flex', alignItems: 'center', gap: 8}}>
+              <Spinner /> AI is typing...
+            </div>
+          </div>
+        )}
+        {loading && !aiTyping && (
           <div style={styles.loading}><Spinner /> <span>Homework Helper is thinking...</span></div>
         )}
         {error && (
@@ -281,7 +330,7 @@ function ChatPage() {
       </div>
       <form onSubmit={handleSend} style={styles.formBar} aria-label="Send a message">
         <label htmlFor="imageInput" style={styles.fileLabel} title="Attach image">
-          <span role="img" aria-label="attach">📎</span>
+          <span role="img" aria-label="attach" style={{fontSize:22}}>📎</span>
           <input
             id="imageInput"
             type="file"
@@ -304,13 +353,17 @@ function ChatPage() {
         />
         {imagePreview && <img src={imagePreview} alt="preview" style={styles.preview} />}
         <button type="submit" style={styles.sendBtn} disabled={loading || (!question.trim() && !image)} aria-busy={loading} aria-label="Send message">
-          <span role="img" aria-label="send">📤</span>
+          <span role="img" aria-label="send" style={{fontSize:22}}>📤</span>
         </button>
       </form>
       <style>{`
         @keyframes fadeInMsg {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes popIn {
+          0% { transform: scale(0.95); }
+          100% { transform: scale(1); }
         }
       `}</style>
     </div>
