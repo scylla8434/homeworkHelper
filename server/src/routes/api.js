@@ -58,14 +58,16 @@ router.post('/upload', upload.single('image'), async (req, res) => {
   }
 });
 
-// Cohere AI Chat endpoint (calls local Python Flask service)
+// Cohere AI Chat endpoint (calls deployed Python Flask service)
+const PYTHON_AI_URL = process.env.PYTHON_AI_URL || 'http://localhost:5001';
+
 router.post('/chat', async (req, res) => {
   try {
     const { question, userId } = req.body;
     if (!question) return res.status(400).json({ message: 'Question is required' });
 
-    // Call local Python service
-    const pyRes = await axios.post('http://localhost:5001/chat', { question });
+    // Call deployed Python service
+    const pyRes = await axios.post(`${PYTHON_AI_URL}/chat`, { question });
     const answer = pyRes.data.answer;
 
     let questionData = { question, answer };
