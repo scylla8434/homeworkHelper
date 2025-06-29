@@ -54,9 +54,9 @@ router.post('/chat', async (req, res) => {
     py.on('close', async (code) => {
       console.log('PYTHON PROCESS CLOSED WITH CODE:', code);
       answer = answer.trim();
-      // Only set user if userId is a valid ObjectId
+      // Only set user if userId is a valid ObjectId and not null/empty
       let questionData = { question, answer };
-      if (mongoose.Types.ObjectId.isValid(userId)) {
+      if (userId && mongoose.Types.ObjectId.isValid(userId)) {
         questionData.user = userId;
       }
       const q = await Question.create(questionData);
