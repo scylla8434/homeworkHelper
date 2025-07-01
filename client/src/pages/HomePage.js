@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const cardStyles = {
   card: {
@@ -104,6 +104,10 @@ function HomePage() {
     { src: 'https://upload.wikimedia.org/wikipedia/commons/0/08/Forbes_logo.svg', alt: 'Forbes' },
     { src: 'https://upload.wikimedia.org/wikipedia/commons/0/0e/USA_Today_logo.svg', alt: 'USA Today' },
   ];
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const navigate = useNavigate();
+  const isLoggedIn = Boolean(localStorage.getItem('token'));
+
   return (
     <div style={{ width: '100%', maxWidth: 1200, margin: '0 auto', padding: '2rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
       {/* Hero Section */}
@@ -111,7 +115,13 @@ function HomePage() {
         <img src="/logo.jpg" alt="Logo" style={{ width: 64, height: 64, borderRadius: 16, marginBottom: 18, boxShadow: '0 2px 8px 0 rgba(60,60,120,0.10)' }} />
         <div style={{ fontSize: 36, fontWeight: 900, color: '#fff', marginBottom: 8, letterSpacing: 1, textAlign: 'center', textShadow: '0 2px 8px #6366f1' }}>Welcome, {userName}!</div>
         <div style={{ fontSize: 20, color: '#f1f5f9', marginBottom: 24, fontWeight: 600, textAlign: 'center', textShadow: '0 1px 4px #6366f1' }}>AI-powered support for your child’s learning journey</div>
-        <Link to="/chat"><button style={cardStyles.cta}>Ask a Question</button></Link>
+        <button
+          style={cardStyles.cta}
+          onClick={() => {
+            if (!isLoggedIn) setShowAuthModal(true);
+            else navigate('/chat');
+          }}
+        >Ask a Question</button>
         <div style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, background: 'radial-gradient(circle, #fff 0%, transparent 70%)', opacity: 0.12, zIndex: 0 }}></div>
         <div style={{ position: 'absolute', bottom: -40, left: -40, width: 160, height: 160, background: 'radial-gradient(circle, #fff 0%, transparent 70%)', opacity: 0.10, zIndex: 0 }}></div>
       </div>
@@ -155,6 +165,17 @@ function HomePage() {
           ))}
         </div>
       </div>
+      {showAuthModal && (
+        <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.5)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <div style={{background:'#fff',borderRadius:16,padding:32,minWidth:300,maxWidth:360,boxShadow:'0 4px 24px 0 rgba(60,60,120,0.18)',textAlign:'center'}}>
+            <div style={{fontWeight:700,fontSize:20,color:'#6366f1',marginBottom:12}}>Sign in to Ask a Question</div>
+            <div style={{fontSize:16,color:'#444',marginBottom:18}}>You need to login or register to use the AI chat. Continue as guest to try a limited demo.</div>
+            <button style={{...cardStyles.cta,marginBottom:10}} onClick={()=>{window.location.href='/login'}}>Login</button>
+            <button style={{...cardStyles.cta,background:'linear-gradient(90deg,#60a5fa 0%,#6366f1 100%)',marginBottom:10}} onClick={()=>{window.location.href='/register'}}>Register</button>
+            <button style={{...cardStyles.cta,background:'#f3f4f6',color:'#6366f1'}} onClick={()=>{setShowAuthModal(false);navigate('/chat')}}>Continue as Guest</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

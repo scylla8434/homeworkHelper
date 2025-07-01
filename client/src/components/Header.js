@@ -155,8 +155,9 @@ export default function Header() {
   const [navHover, setNavHover] = useState('');
   const [dropdownHover, setDropdownHover] = useState('');
   const dropdownRef = useRef();
-  const userName = localStorage.getItem('userName') || localStorage.getItem('userEmail') || '';
-  const userAvatar = localStorage.getItem('userAvatar');
+  const [userName, setUserName] = useState(localStorage.getItem('userName') || localStorage.getItem('userEmail') || '');
+  const [userAvatar, setUserAvatar] = useState(localStorage.getItem('userAvatar'));
+  const isLoggedIn = Boolean(localStorage.getItem('token'));
 
   // Close dropdown on outside click
   React.useEffect(() => {
@@ -177,6 +178,16 @@ export default function Header() {
     if (dropdownOpen) document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [dropdownOpen]);
+
+  // Listen for live user/profile updates
+  React.useEffect(() => {
+    function updateUser() {
+      setUserName(localStorage.getItem('userName') || localStorage.getItem('userEmail') || '');
+      setUserAvatar(localStorage.getItem('userAvatar'));
+    }
+    window.addEventListener('user-updated', updateUser);
+    return () => window.removeEventListener('user-updated', updateUser);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -214,9 +225,22 @@ export default function Header() {
         </button>
         {dropdownOpen && (
           <div style={styles.dropdown}>
-            <Link to="/profile" style={styles.dropdownItem(dropdownHover==='settings')}
-              onMouseEnter={()=>setDropdownHover('settings')} onMouseLeave={()=>setDropdownHover('')}>Settings</Link>
-            <button style={styles.dropdownItem(dropdownHover==='logout')} onMouseEnter={()=>setDropdownHover('logout')} onMouseLeave={()=>setDropdownHover('')} onClick={handleLogout}>Logout</button>
+            {isLoggedIn ? (
+              <>
+                <Link to="/profile" style={styles.dropdownItem(dropdownHover==='profile')}
+                  onMouseEnter={()=>setDropdownHover('profile')} onMouseLeave={()=>setDropdownHover('')}>Profile</Link>
+                <Link to="/settings" style={styles.dropdownItem(dropdownHover==='settings')}
+                  onMouseEnter={()=>setDropdownHover('settings')} onMouseLeave={()=>setDropdownHover('')}>Settings</Link>
+                <button style={styles.dropdownItem(dropdownHover==='logout')} onMouseEnter={()=>setDropdownHover('logout')} onMouseLeave={()=>setDropdownHover('')} onClick={handleLogout}>Logout</button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" style={styles.dropdownItem(dropdownHover==='login')}
+                  onMouseEnter={()=>setDropdownHover('login')} onMouseLeave={()=>setDropdownHover('')}>Login</Link>
+                <Link to="/register" style={styles.dropdownItem(dropdownHover==='register')}
+                  onMouseEnter={()=>setDropdownHover('register')} onMouseLeave={()=>setDropdownHover('')}>Register</Link>
+              </>
+            )}
           </div>
         )}
       </div>

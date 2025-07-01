@@ -1,6 +1,31 @@
 # Homework Helper for Busy Parents
 
-**Live Demo:** [eduedge.netlify.app](https://eduedge.netlify.app)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/your-badge-id/deploy-status)](https://eduedge.netlify.app)
+[![Render Backend](https://img.shields.io/badge/Backend-Render-green)](https://homework-helper-backend.onrender.com)
+[![Render Python AI](https://img.shields.io/badge/Python%20AI-Render-blue)](https://ai-python-service.onrender.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+---
+
+# Table of Contents
+- [Overview](#overview)
+- [Features](#features)
+- [Live Links](#live-links)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Screenshots](#screenshots)
+- [Mobile UX](#mobile-ux)
+- [Mobile Navigation](#mobile-navigation)
+- [Accessibility](#accessibility)
+- [Quick Start](#quick-start)
+- [Deployment](#deployment)
+- [API Endpoints](#api-endpoints)
+- [Environment Variables](#environment-variables)
+- [Security](#security)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [Credits](#credits)
+- [License](#license)
 
 ---
 
@@ -39,6 +64,87 @@ Homework Helper is a full-stack MERN application with AI-powered chat, M-Pesa su
 
 ---
 
+## Screenshots
+
+| Desktop | Mobile |
+| ------- | ------ |
+| ![Desktop Screenshot](client/public/screenshot-desktop.png) | ![Mobile Screenshot](client/public/screenshot-mobile.png) |
+
+> _Replace with your own screenshots_
+
+---
+
+## Mobile UX
+- Fully responsive: All main UI elements adapt to small screens.
+- Mobile-first CSS (`client/src/mobile.css`) with extensive media queries.
+- Touch-friendly buttons, cards, and modals.
+- **Collapsible (hamburger) menu for navigation:**
+  - On mobile, navigation is hidden by default and toggled with a hamburger icon.
+  - Menu auto-expands when tapped and minimizes when a link is selected or the user taps outside.
+  - Example (React):
+    ```jsx
+    // In Header.js or NavBar.js
+    const [menuOpen, setMenuOpen] = useState(false);
+    return (
+      <nav className="mobile-nav">
+        <button aria-label="Open menu" onClick={() => setMenuOpen(!menuOpen)}>
+          <span className="hamburger-icon" />
+        </button>
+        <ul className={`nav-links ${menuOpen ? 'open' : ''}`}>/* ...links... */</ul>
+      </nav>
+    );
+    ```
+  - CSS ensures smooth slide-in/out and overlays the menu above content.
+- Fast, accessible, and tested on real devices.
+
+---
+
+## Mobile Navigation
+- **Hamburger menu**: Use a button with `aria-label` and a visually clear icon.
+- **Auto-collapse**: Menu closes on link click or outside tap (add event listeners for UX).
+- **Keyboard accessible**: Menu can be opened/closed with keyboard, links are tabbable.
+- **Sample CSS**:
+  ```css
+  .mobile-nav .nav-links {
+    display: none;
+    position: absolute;
+    top: 60px; left: 0; right: 0;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: max-height 0.3s;
+    max-height: 0;
+    overflow: hidden;
+  }
+  .mobile-nav .nav-links.open {
+    display: block;
+    max-height: 400px;
+  }
+  .hamburger-icon {
+    width: 30px; height: 3px; background: #333; margin: 6px 0;
+    display: block;
+  }
+  ```
+
+---
+
+## Best Practices for Mobile Fit
+- Add the following meta tag in `client/public/index.html` for full-screen fit:
+  ```html
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  ```
+- Use `height: 100vh;` and `box-sizing: border-box;` in CSS to ensure content fits the screen.
+- Test on multiple devices and orientations.
+
+---
+
+## Accessibility
+- ARIA labels on all interactive elements.
+- Keyboard navigation supported (tab, enter, escape for modals).
+- Sufficient color contrast and focus indicators.
+- Screen reader friendly (tested with NVDA/VoiceOver).
+
+---
+
 ## Quick Start
 
 ### 1. Local Development
@@ -51,46 +157,6 @@ Homework Helper is a full-stack MERN application with AI-powered chat, M-Pesa su
 
 ### 3. Environment Variables
 - See `.env.example` files in both `/server` and `/client`
-
----
-
-## Guides
-- See below for detailed setup, GitHub, and deployment instructions (to be filled as project is built)
-
----
-
-## Local Development
-
-### 1. Clone the Repos
-```
-git clone <your-mern-repo>
-git clone <your-ai-python-service-repo>
-```
-
-### 2. Environment Variables
-- Set up `.env` files for both backend and Python service (see `.env.example` in each).
-- **Important:** Never commit real API keys or secrets to GitHub.
-
-### 3. Start the Python AI Service
-```
-cd ai-python-service
-pip install -r requirements.txt
-python app.py
-```
-
-### 4. Start the Backend
-```
-cd server
-npm install
-npm run dev
-```
-
-### 5. Start the Frontend
-```
-cd client
-npm install
-npm start
-```
 
 ---
 
@@ -141,6 +207,22 @@ npm start
 ## Security
 - All secrets and API keys must be set in environment variables (never in code or public repos).
 - Use HTTPS for all deployed services.
+
+---
+
+## Troubleshooting
+- **CORS errors:** Ensure all deployed URLs are set correctly in environment variables.
+- **M-Pesa sandbox issues:** Use real phone numbers and credentials for production.
+- **AI service not responding:** Check Python AI service logs and `COHERE_API_KEY`.
+- **Frontend not connecting:** Confirm `REACT_APP_API_URL` is set to backend Render URL.
+
+---
+
+## Contributing
+1. Fork the repo and create a feature branch.
+2. Make your changes and add tests if needed.
+3. Open a pull request with a clear description.
+4. All contributions are welcome!
 
 ---
 

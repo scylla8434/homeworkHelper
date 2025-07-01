@@ -143,6 +143,10 @@ function LoginPage() {
       const res = await axios.post(`${API_URL}/api/auth/login`, { email, password });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('userId', res.data.user.id);
+      localStorage.setItem('userName', res.data.user.name || res.data.user.email);
+      localStorage.setItem('userEmail', res.data.user.email);
+      if (res.data.user.avatar) localStorage.setItem('userAvatar', res.data.user.avatar);
+      window.dispatchEvent(new Event('user-updated'));
       window.location.href = '/';
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');

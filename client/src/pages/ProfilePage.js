@@ -195,6 +195,12 @@ function ProfilePage() {
         setName(res.data.name);
         setEmail(res.data.email);
         setPhone(res.data.phone || '');
+        if (res.data.avatar) {
+          setAvatarPreview(res.data.avatar);
+          localStorage.setItem('userAvatar', res.data.avatar);
+        }
+        localStorage.setItem('userName', res.data.name);
+        window.dispatchEvent(new Event('user-updated'));
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -231,6 +237,8 @@ function ProfilePage() {
       const res = await axios.put(`${API_URL}/api/user/${userId}`, { name: editName, phone: editPhone });
       setName(res.data.user.name);
       setPhone(res.data.user.phone);
+      localStorage.setItem('userName', res.data.user.name);
+      window.dispatchEvent(new Event('user-updated'));
       setEdit(false);
       setProfileMsg('Profile updated successfully.');
     } catch (err) {
@@ -264,6 +272,7 @@ function ProfilePage() {
       const url = URL.createObjectURL(file);
       setAvatarPreview(url);
       localStorage.setItem('userAvatar', url);
+      window.dispatchEvent(new Event('user-updated'));
     }
   };
 
