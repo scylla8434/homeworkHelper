@@ -39,6 +39,10 @@ Homework Helper is a full-stack MERN application with AI-powered chat, M-Pesa su
 - **M-Pesa Subscription:** Secure mobile payments for premium access using Safaricom Daraja API.
 - **User Profiles:** View and edit your profile, change password, and upload an avatar.
 - **Responsive UI:** Modern, mobile-friendly design with professional feedback and error handling.
+- **Session Management:** Auto-logout after 5 minutes of inactivity for security. Centralized session/user state with instant UI updates.
+- **Registration/Login Flow:** Registration redirects to login with a success message. After login, users are redirected to the home page.
+- **Usage Tracking:** Free users have monthly usage limits, with a usage bar and warnings in the UI.
+- **Image Upload & OCR:** Upload images for AI-powered text extraction and question answering.
 - **Admin/Pro Features:** (Optional) Extendable for more roles and features.
 
 ---
@@ -150,6 +154,9 @@ Homework Helper is a full-stack MERN application with AI-powered chat, M-Pesa su
 ### 1. Local Development
 - Backend: `cd server && npm install && npm run dev`
 - Frontend: `cd client && npm install && npm start`
+  - Registration redirects to login with a success message.
+  - After login, users are redirected to the home page.
+  - Users are automatically logged out after 5 minutes of inactivity.
 
 ### 2. Deployment
 - Frontend: Deploy `/client` to Netlify
@@ -204,7 +211,11 @@ Homework Helper is a full-stack MERN application with AI-powered chat, M-Pesa su
 
 ---
 
-## Security
+## Security & Session Management
+- Auto-logout after 5 minutes of inactivity (idle detection).
+- Centralized session and user state with React Context for instant UI updates.
+- Registration success message shown on login page after registering.
+- After login, users are redirected to the home page.
 - All secrets and API keys must be set in environment variables (never in code or public repos).
 - Use HTTPS for all deployed services.
 

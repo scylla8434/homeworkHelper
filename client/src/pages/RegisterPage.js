@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -136,20 +137,16 @@ function RegisterPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const res = await axios.post(`${API_URL}/api/auth/register`, { name, email, password });
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('userId', res.data.user.id);
-      localStorage.setItem('userName', res.data.user.name || res.data.user.email);
-      localStorage.setItem('userEmail', res.data.user.email);
-      if (res.data.user.avatar) localStorage.setItem('userAvatar', res.data.user.avatar);
-      window.dispatchEvent(new Event('user-updated'));
-      window.location.href = '/'; // Redirect to HomePage after registration
+      await axios.post(`${API_URL}/api/auth/register`, { name, email, password });
+      // Registration successful, redirect to login with message
+      navigate('/login', { state: { message: 'Registration successful, please log in' } });
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 
 const cardStyles = {
   card: {
@@ -80,7 +81,8 @@ function FeatureCard({ to, icon, title, desc }) {
 }
 
 function HomePage() {
-  const userName = localStorage.getItem('userName') || localStorage.getItem('userEmail') || 'User';
+  const { user } = useAuth();
+  const userName = user?.name || user?.email || '';
   const testimonials = [
     {
       name: 'Sarah M.',
@@ -106,14 +108,16 @@ function HomePage() {
   ];
   const [showAuthModal, setShowAuthModal] = useState(false);
   const navigate = useNavigate();
-  const isLoggedIn = Boolean(localStorage.getItem('token'));
+  const isLoggedIn = !!user;
 
   return (
     <div style={{ width: '100%', maxWidth: 1200, margin: '0 auto', padding: '2rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
       {/* Hero Section */}
       <div style={{ width: '100%', maxWidth: 900, margin: '0 auto 32px auto', padding: '2.5rem 2rem 2rem 2rem', background: 'linear-gradient(135deg, #6366f1 0%, #60a5fa 100%)', borderRadius: '1.5rem', boxShadow: '0 4px 24px 0 rgba(60,60,120,0.10)', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
         <img src="/logo.jpg" alt="Logo" style={{ width: 64, height: 64, borderRadius: 16, marginBottom: 18, boxShadow: '0 2px 8px 0 rgba(60,60,120,0.10)' }} />
-        <div style={{ fontSize: 36, fontWeight: 900, color: '#fff', marginBottom: 8, letterSpacing: 1, textAlign: 'center', textShadow: '0 2px 8px #6366f1' }}>Welcome, {userName}!</div>
+        <div style={{ fontSize: 36, fontWeight: 900, color: '#fff', marginBottom: 8, letterSpacing: 1, textAlign: 'center', textShadow: '0 2px 8px #6366f1' }}>
+          {userName ? `Welcome, ${userName}!` : 'Welcome!'}
+        </div>
         <div style={{ fontSize: 20, color: '#f1f5f9', marginBottom: 24, fontWeight: 600, textAlign: 'center', textShadow: '0 1px 4px #6366f1' }}>AI-powered support for your child’s learning journey</div>
         <button
           style={cardStyles.cta}

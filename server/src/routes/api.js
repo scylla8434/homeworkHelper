@@ -47,6 +47,19 @@ function getTimestamp() {
     String(date.getSeconds()).padStart(2, '0');
 }
 
+// Helper: Check and reset usage monthly
+async function checkAndResetUsage(user) {
+  if (!user.usageResetAt) return user; // fallback
+  const now = new Date();
+  const lastReset = new Date(user.usageResetAt);
+  if (now.getFullYear() !== lastReset.getFullYear() || now.getMonth() !== lastReset.getMonth()) {
+    user.usage = 0;
+    user.usageResetAt = now;
+    await user.save();
+  }
+  return user;
+}
+
 // Image upload endpoint
 router.post('/upload', upload.single('image'), async (req, res) => {
   try {
@@ -60,11 +73,23 @@ router.post('/upload', upload.single('image'), async (req, res) => {
 
 // Cohere AI Chat endpoint (calls deployed Python Flask service)
 const PYTHON_AI_URL = process.env.PYTHON_AI_URL || 'http://localhost:5001';
+const FREE_USER_LIMIT = 10; // e.g., 10 free chats per month
 
 router.post('/chat', async (req, res) => {
   try {
     const { question, userId } = req.body;
     if (!question) return res.status(400).json({ message: 'Question is required' });
+
+    let user = null;
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      user = await User.findById(userId);
+      if (!user) return res.status(404).json({ message: 'User not found' });
+      user = await checkAndResetUsage(user); // Reset usage if new month
+      const isSubscribed = user.subscription && user.subscription.active;
+      if (!isSubscribed && user.usage >= FREE_USER_LIMIT) {
+        return res.status(403).json({ message: 'Free usage limit reached. Please subscribe to continue.' });
+      }
+    }
 
     // Call deployed Python service
     const pyRes = await axios.post(`${PYTHON_AI_URL}/chat`, { question });
@@ -73,6 +98,8 @@ router.post('/chat', async (req, res) => {
     let questionData = { question, answer };
     if (userId && mongoose.Types.ObjectId.isValid(userId)) {
       questionData.user = userId;
+      // Increment usage for this user
+      await User.findByIdAndUpdate(userId, { $inc: { usage: 1 } });
     }
     const q = await Question.create(questionData);
     res.json({ answer, question: q });
@@ -201,6 +228,34 @@ router.put('/user/:id/password', async (req, res) => {
     res.json({ success: true, message: 'Password updated' });
   } catch (err) {
     res.status(500).json({ message: 'Error updating password', error: err.message });
+  }
+});
+
+// Avatar upload endpoint
+router.post('/user/:id/avatar', upload.single('avatar'), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+    // Save avatar path (relative URL)
+    user.avatar = `/uploads/${req.file.filename}`;
+    await user.save();
+    res.json({ avatarUrl: user.avatar });
+  } catch (err) {
+    res.status(500).json({ message: 'Avatar upload error', error: err.message });
+  }
+});
+
+// --- USER USAGE ROUTE ---
+// Get usage data for a user
+router.get('/user/:id/usage', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('usage subscription');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const isSubscribed = user.subscription && user.subscription.active;
+    res.json({ usage: user.usage, isSubscribed });
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching usage', error: err.message });
   }
 });
 

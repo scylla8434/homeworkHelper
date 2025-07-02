@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useTheme } from '../ThemeContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
 
 const styles = {
   header: {
@@ -151,13 +152,14 @@ export default function Header() {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = require('../AuthContext').useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [navHover, setNavHover] = useState('');
   const [dropdownHover, setDropdownHover] = useState('');
   const dropdownRef = useRef();
-  const [userName, setUserName] = useState(localStorage.getItem('userName') || localStorage.getItem('userEmail') || '');
-  const [userAvatar, setUserAvatar] = useState(localStorage.getItem('userAvatar'));
-  const isLoggedIn = Boolean(localStorage.getItem('token'));
+  const [userName, setUserName] = useState(user?.name || user?.email || '');
+  const [userAvatar, setUserAvatar] = useState(user?.avatar);
+  const isLoggedIn = !!user;
 
   // Close dropdown on outside click
   React.useEffect(() => {
@@ -179,22 +181,14 @@ export default function Header() {
     return () => document.removeEventListener('keydown', handleKey);
   }, [dropdownOpen]);
 
-  // Listen for live user/profile updates
+  // Listen for live user/profile updates from AuthContext
   React.useEffect(() => {
-    function updateUser() {
-      setUserName(localStorage.getItem('userName') || localStorage.getItem('userEmail') || '');
-      setUserAvatar(localStorage.getItem('userAvatar'));
-    }
-    window.addEventListener('user-updated', updateUser);
-    return () => window.removeEventListener('user-updated', updateUser);
-  }, []);
+    setUserName(user?.name || user?.email || '');
+    setUserAvatar(user?.avatar);
+  }, [user]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userEmail');
-    navigate('/login');
+    logout();
   };
 
   return (

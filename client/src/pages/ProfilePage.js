@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from '../AuthContext';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const styles = {
@@ -168,6 +169,7 @@ styles.cancelBtn = {
 };
 
 function ProfilePage() {
+  const { user, updateUser, logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -188,31 +190,16 @@ function ProfilePage() {
   const [pwErr, setPwErr] = useState('');
 
   useEffect(() => {
-    const userId = localStorage.getItem('userId');
-    if (!userId) return setLoading(false);
-    axios.get(`${API_URL}/api/user/${userId}`)
-      .then(res => {
-        setName(res.data.name);
-        setEmail(res.data.email);
-        setPhone(res.data.phone || '');
-        if (res.data.avatar) {
-          setAvatarPreview(res.data.avatar);
-          localStorage.setItem('userAvatar', res.data.avatar);
-        }
-        localStorage.setItem('userName', res.data.name);
-        window.dispatchEvent(new Event('user-updated'));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+    if (!user) return setLoading(false);
+    setName(user.name);
+    setEmail(user.email);
+    setPhone(user.phone || '');
+    if (user.avatar) setAvatarPreview(user.avatar);
+    setLoading(false);
+  }, [user]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userAvatar');
-    window.location.href = '/login';
+    logout();
   };
 
   const handleEdit = () => {
@@ -232,13 +219,12 @@ function ProfilePage() {
   const handleSave = async () => {
     setProfileMsg('');
     setProfileErr('');
-    const userId = localStorage.getItem('userId');
     try {
-      const res = await axios.put(`${API_URL}/api/user/${userId}`, { name: editName, phone: editPhone });
+      // Assume user._id or user.id is available
+      const res = await axios.put(`${API_URL}/api/user/${user._id || user.id}`, { name: editName, phone: editPhone });
       setName(res.data.user.name);
       setPhone(res.data.user.phone);
-      localStorage.setItem('userName', res.data.user.name);
-      window.dispatchEvent(new Event('user-updated'));
+      updateUser(res.data.user); // Update context/localStorage
       setEdit(false);
       setProfileMsg('Profile updated successfully.');
     } catch (err) {
@@ -246,6 +232,7 @@ function ProfilePage() {
     }
   };
 
+  // Keep user context in sync with backend after password change
   const handlePwChange = async () => {
     setPwMsg('');
     setPwErr('');
@@ -255,9 +242,11 @@ function ProfilePage() {
     if (newPw !== confirmPw) {
       setPwErr('New passwords do not match.'); return;
     }
-    const userId = localStorage.getItem('userId');
     try {
-      await axios.put(`${API_URL}/api/user/${userId}/password`, { oldPassword: oldPw, newPassword: newPw });
+      const res = await axios.put(`${API_URL}/api/user/${user._id || user.id}/password`, { oldPassword: oldPw, newPassword: newPw });
+      // Optionally, fetch latest user info and update context
+      const userRes = await axios.get(`${API_URL}/api/user/${user._id || user.id}`);
+      updateUser(userRes.data);
       setPwMsg('Password updated successfully.');
       setOldPw(''); setNewPw(''); setConfirmPw('');
     } catch (err) {
@@ -265,14 +254,20 @@ function ProfilePage() {
     }
   };
 
-  const handleAvatarChange = (e) => {
+  const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       setAvatar(file);
-      const url = URL.createObjectURL(file);
-      setAvatarPreview(url);
-      localStorage.setItem('userAvatar', url);
-      window.dispatchEvent(new Event('user-updated'));
+      const formData = new FormData();
+      formData.append('avatar', file);
+      try {
+        // Assume backend supports avatar upload at /api/user/:id/avatar
+        const res = await axios.post(`${API_URL}/api/user/${user._id || user.id}/avatar`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        setAvatarPreview(res.data.avatarUrl);
+        updateUser({ ...user, avatar: res.data.avatarUrl });
+      } catch (err) {
+        setProfileErr('Avatar upload failed.');
+      }
     }
   };
 

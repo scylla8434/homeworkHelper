@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const FREE_USER_LIMIT = 10; // Keep in sync with backend
 
 const styles = {
   chatWrapper: {
@@ -201,6 +202,9 @@ function ChatPage() {
   const [imagePreview, setImagePreview] = useState(null);
   const [reactions, setReactions] = useState({}); // {msgIndex: emoji}
   const [aiTyping, setAiTyping] = useState(false);
+  const [usage, setUsage] = useState(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [usageWarning, setUsageWarning] = useState(null);
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -208,6 +212,30 @@ function ChatPage() {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, loading]);
+
+  useEffect(() => {
+    const userId = localStorage.getItem('userId');
+    if (userId) {
+      axios.get(`${API_URL}/api/user/${userId}/usage`).then(res => {
+        setUsage(res.data.usage);
+        setIsSubscribed(res.data.isSubscribed);
+      }).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (usage !== null && !isSubscribed) {
+      if (usage === FREE_USER_LIMIT - 1) {
+        setUsageWarning('You have 1 free chat left this month!');
+      } else if (usage >= FREE_USER_LIMIT - 3 && usage < FREE_USER_LIMIT - 1) {
+        setUsageWarning(`You are nearing your free chat limit (${usage} / ${FREE_USER_LIMIT}).`);
+      } else {
+        setUsageWarning(null);
+      }
+    } else {
+      setUsageWarning(null);
+    }
+  }, [usage, isSubscribed]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -229,12 +257,19 @@ function ChatPage() {
         extractedText = ocrRes.data.text;
       }
       const userId = localStorage.getItem('userId') || 'demo';
-      // If only image, use extracted text as question
-      const chatQuestion = question.trim() ? question : extractedText;
+      // Enhanced prompt engineering for educational context
+      let systemPrompt = `You are an expert educational assistant. Give clear, step-by-step, age-appropriate answers. If the question is about math, show all work. If it's science, explain concepts simply. If it's a language question, provide examples. Always encourage curiosity and a growth mindset. Avoid giving direct answers to homework but guide the student to learn.`;
+      let fullPrompt = question.trim() ? `${systemPrompt}\n\nQuestion: ${question.trim()}` : `${systemPrompt}\n\nQuestion: ${extractedText}`;
       // Simulate typing delay for AI
       await new Promise(res => setTimeout(res, 900));
-      const res = await axios.post(`${API_URL}/api/chat`, { question: chatQuestion, userId, imageUrl });
+      const res = await axios.post(`${API_URL}/api/chat`, { question: fullPrompt, userId, imageUrl });
       setMessages((msgs) => [...msgs, { role: 'assistant', content: res.data.answer, time: new Date() }]);
+      // Refresh usage after chat
+      if (userId && userId !== 'demo') {
+        const usageRes = await axios.get(`${API_URL}/api/user/${userId}/usage`);
+        setUsage(usageRes.data.usage);
+        setIsSubscribed(usageRes.data.isSubscribed);
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Something went wrong.');
       setMessages((msgs) => [...msgs, { role: 'assistant', content: 'Error: ' + (err.response?.data?.message || err.message), time: new Date() }]);
@@ -267,6 +302,22 @@ function ChatPage() {
 
   return (
     <div style={styles.chatWrapper}>
+      {/* Usage bar */}
+      {usage !== null && (
+        <div style={{padding: '10px 20px', background: '#f1f5f9', borderBottom: '1px solid #e5e7eb', fontSize: 15, color: '#6366f1', fontWeight: 600, textAlign: 'center'}}>
+          {isSubscribed ? (
+            <>Unlimited chats (subscribed)</>
+          ) : (
+            <>Usage: {usage} / {FREE_USER_LIMIT} free chats this month</>
+          )}
+        </div>
+      )}
+      {/* Usage warning notification */}
+      {usageWarning && (
+        <div style={{background:'#fffbe6', color:'#b45309', border:'1px solid #fde68a', borderRadius:8, margin:'10px 20px', padding:'10px', textAlign:'center', fontWeight:600, fontSize:15}}>
+          {usageWarning}
+        </div>
+      )}
       <div style={styles.chatBox} aria-live="polite" aria-label="Chat messages">
         <div style={styles.chatBgDecor}></div>
         {messages.map((msg, i) => (

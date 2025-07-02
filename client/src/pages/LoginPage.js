@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useAuth } from '../AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -134,6 +136,10 @@ function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const successMessage = location.state?.message || '';
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -141,13 +147,8 @@ function LoginPage() {
     setLoading(true);
     try {
       const res = await axios.post(`${API_URL}/api/auth/login`, { email, password });
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('userId', res.data.user.id);
-      localStorage.setItem('userName', res.data.user.name || res.data.user.email);
-      localStorage.setItem('userEmail', res.data.user.email);
-      if (res.data.user.avatar) localStorage.setItem('userAvatar', res.data.user.avatar);
-      window.dispatchEvent(new Event('user-updated'));
-      window.location.href = '/';
+      login(res.data.user); // Store user in context/localStorage
+      navigate('/'); // Redirect to home page after successful login
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     }
@@ -160,6 +161,19 @@ function LoginPage() {
       <div style={styles.bgDecor2}></div>
       <img src="/logo.jpg" alt="Logo" style={styles.logo} />
       <div style={styles.header}>Sign In</div>
+      {successMessage && (
+        <div style={{
+          background: '#e0f7fa',
+          color: '#059669',
+          borderRadius: 8,
+          padding: '10px 0',
+          margin: '18px 32px 0 32px',
+          textAlign: 'center',
+          fontWeight: 500,
+          fontSize: 15,
+          boxShadow: '0 1px 4px 0 rgba(16,185,129,0.08)'
+        }}>{successMessage}</div>
+      )}
       <form onSubmit={handleLogin} style={styles.form} autoComplete="off">
         <div style={styles.inputGroup}>
           <span style={styles.inputIcon} role="img" aria-label="email">✉️</span>
