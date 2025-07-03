@@ -367,12 +367,12 @@ function ChatPage() {
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style={{display:'block'}}><rect x="4" y="4" width="16" height="16" rx="8" fill="#6366f1"/><path d="M8 10h8M8 14h5" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
             </div>
             <div style={{...styles.bubble('assistant'), fontStyle: 'italic', opacity: 0.7, display: 'flex', alignItems: 'center', gap: 8}}>
-              <Spinner /> AI is typing...
+              <Spinner /> Eduedge is typing...
             </div>
           </div>
         )}
         {loading && !aiTyping && (
-          <div style={styles.loading}><Spinner /> <span>Homework Helper is thinking...</span></div>
+          <div style={styles.loading}><Spinner /> <span>Eduedge is thinking...</span></div>
         )}
         {error && (
           <div style={styles.error} role="alert">{error}</div>

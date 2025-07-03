@@ -27,10 +27,14 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Helper: Get M-Pesa access token
+const MPESA_BASE_URL = process.env.MPESA_ENV === 'live'
+  ? 'https://api.safaricom.co.ke'
+  : 'https://sandbox.safaricom.co.ke';
+
 async function getMpesaToken() {
   const { MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET } = process.env;
   const auth = Buffer.from(`${MPESA_CONSUMER_KEY}:${MPESA_CONSUMER_SECRET}`).toString('base64');
-  const res = await axios.get('https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials', {
+  const res = await axios.get(`${MPESA_BASE_URL}/oauth/v1/generate?grant_type=client_credentials`, {
     headers: { Authorization: `Basic ${auth}` }
   });
   return res.data.access_token;
@@ -129,12 +133,12 @@ router.post('/subscribe', async (req, res) => {
       PartyB: process.env.MPESA_SHORTCODE,
       PhoneNumber: phone,
       CallBackURL: process.env.MPESA_CALLBACK_URL,
-      AccountReference: userId, // Use userId for easy matching
+      AccountReference: String(userId), // Always a string, never null
       TransactionDesc: `Subscription (${plan})`
     };
 
     const stkRes = await axios.post(
-      'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
+      `${MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`,
       payload,
       { headers: { Authorization: `Bearer ${token}` } }
     );

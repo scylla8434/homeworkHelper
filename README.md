@@ -72,9 +72,9 @@ Homework Helper is a full-stack MERN application with AI-powered chat, M-Pesa su
 
 | Desktop | Mobile |
 | ------- | ------ |
-| ![Desktop Screenshot](client/public/screenshot-desktop.png) | ![Mobile Screenshot](client/public/screenshot-mobile.png) |
+| ![home Screenshot](client/public/home.png) | ![limits](client/public/limits reached.png) |
 
-> _Replace with your own screenshots_
+
 
 ---
 
@@ -238,11 +238,11 @@ Homework Helper is a full-stack MERN application with AI-powered chat, M-Pesa su
 ---
 
 ## Credits
-- Built by [Your Name/Team].
+- Built by Scylla8434.
 - AI powered by Cohere.
 - Payments powered by Safaricom M-Pesa Daraja API.
 
 ---
 
 ## License
-MIT (or your preferred license)
+MIT 

@@ -85,26 +85,26 @@ function HomePage() {
   const userName = user?.name || user?.email || '';
   const testimonials = [
     {
-      name: 'Sarah M.',
+      name: 'Mildred Omollo.',
       avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
       text: 'Homework Helper has made evenings so much easier! The AI answers are spot on and the interface is beautiful.',
     },
     {
-      name: 'James L.',
+      name: 'Florence Wesonga.',
       avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
       text: 'I love the Pro plan. Unlimited questions and fast support. Highly recommended for busy parents!',
     },
     {
-      name: 'Priya S.',
+      name: 'Wilkister Anyangu.',
       avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
       text: 'The OCR feature is a lifesaver for math homework. My kids are more independent now.',
     },
   ];
   const pressLogos = [
-    { src: 'https://upload.wikimedia.org/wikipedia/commons/4/44/New_York_Times_logo_variation.jpg', alt: 'NY Times' },
+    { src: 'https://upload.wikimedia.org/wikipedia/commons/4/44/New_York_Times_logo_variation.jpg', alt: 'The Star' },
     { src: 'https://upload.wikimedia.org/wikipedia/commons/6/6a/TechCrunch_logo.svg', alt: 'TechCrunch' },
     { src: 'https://upload.wikimedia.org/wikipedia/commons/0/08/Forbes_logo.svg', alt: 'Forbes' },
-    { src: 'https://upload.wikimedia.org/wikipedia/commons/0/0e/USA_Today_logo.svg', alt: 'USA Today' },
+    { src: 'https://upload.wikimedia.org/wikipedia/commons/0/0e/USA_Today_logo.svg', alt: 'PubG' },
   ];
   const [showAuthModal, setShowAuthModal] = useState(false);
   const navigate = useNavigate();
