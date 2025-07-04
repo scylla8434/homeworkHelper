@@ -9,7 +9,9 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle,
-  Crown
+  Crown,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -66,6 +68,44 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+  },
+  
+  debugBar: {
+    background: '#f9fafb',
+    border: '1px solid #e5e7eb',
+    borderRadius: 8,
+    margin: '16px 24px',
+    padding: '12px 16px',
+    fontSize: 12,
+    fontFamily: 'monospace',
+    color: '#374151',
+  },
+  
+  debugSection: {
+    marginBottom: 8,
+    paddingBottom: 8,
+    borderBottom: '1px solid #e5e7eb',
+  },
+  
+  debugLabel: {
+    fontWeight: 600,
+    color: '#1f2937',
+    display: 'inline-block',
+    minWidth: 120,
+  },
+  
+  debugValue: {
+    color: '#6b7280',
+  },
+  
+  debugError: {
+    color: '#dc2626',
+    fontWeight: 500,
+  },
+  
+  debugSuccess: {
+    color: '#059669',
+    fontWeight: 500,
   },
   
   chatBox: {
@@ -176,7 +216,6 @@ const styles = {
     fontSize: 15,
     outline: 'none',
     color: '#1f2937',
-    placeholder: '#9ca3af',
   },
   
   fileButton: {
@@ -305,6 +344,88 @@ function formatTime(date) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// Debug Info Component
+function DebugInfo({ 
+  usage, 
+  isSubscribed, 
+  error, 
+  backendHealth, 
+  userId,
+  showDebug = true 
+}) {
+  if (!showDebug) return null;
+  
+  return (
+    <div style={styles.debugBar}>
+      <div style={styles.debugSection}>
+        <span style={styles.debugLabel}>🔍 Debug Mode:</span>
+        <span style={styles.debugValue}>Active (Remove in production)</span>
+      </div>
+      
+      <div style={styles.debugSection}>
+        <div>
+          <span style={styles.debugLabel}>API URL:</span>
+          <span style={styles.debugValue}>{API_URL}</span>
+        </div>
+        <div>
+          <span style={styles.debugLabel}>Environment:</span>
+          <span style={styles.debugValue}>{process.env.NODE_ENV || 'development'}</span>
+        </div>
+        <div>
+          <span style={styles.debugLabel}>Current URL:</span>
+          <span style={styles.debugValue}>{window.location.href}</span>
+        </div>
+      </div>
+      
+      <div style={styles.debugSection}>
+        <div>
+          <span style={styles.debugLabel}>User ID:</span>
+          <span style={userId ? styles.debugSuccess : styles.debugError}>
+            {userId || 'NOT SET'}
+          </span>
+        </div>
+        <div>
+          <span style={styles.debugLabel}>Usage State:</span>
+          <span style={styles.debugValue}>
+            {usage === null ? 'null' : usage}
+          </span>
+        </div>
+        <div>
+          <span style={styles.debugLabel}>Subscribed:</span>
+          <span style={styles.debugValue}>{isSubscribed ? 'Yes' : 'No'}</span>
+        </div>
+      </div>
+      
+      <div style={styles.debugSection}>
+        <div>
+          <span style={styles.debugLabel}>Backend Health:</span>
+          <span style={backendHealth?.status === 'healthy' ? styles.debugSuccess : styles.debugError}>
+            {backendHealth ? 
+              (backendHealth.status || backendHealth.error || 'Unknown') : 
+              'Checking...'
+            }
+          </span>
+        </div>
+        {backendHealth?.mongodb && (
+          <div>
+            <span style={styles.debugLabel}>MongoDB:</span>
+            <span style={backendHealth.mongodb === 'connected' ? styles.debugSuccess : styles.debugError}>
+              {backendHealth.mongodb}
+            </span>
+          </div>
+        )}
+      </div>
+      
+      {error && (
+        <div>
+          <span style={styles.debugLabel}>Last Error:</span>
+          <span style={styles.debugError}>{error}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ChatPage() {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState([]);
@@ -320,8 +441,13 @@ function ChatPage() {
   const [inputFocused, setInputFocused] = useState(false);
   const [fileButtonHover, setFileButtonHover] = useState(false);
   const [sendButtonHover, setSendButtonHover] = useState(false);
+  const [backendHealth, setBackendHealth] = useState(null);
+  const [debugInfo, setDebugInfo] = useState(null);
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Show debug mode only in development or when localStorage debug flag is set
+  const showDebug = process.env.NODE_ENV === 'development' || localStorage.getItem('debug') === 'true';
 
   useEffect(() => {
     if (chatEndRef.current) {
@@ -329,14 +455,72 @@ function ChatPage() {
     }
   }, [messages, loading]);
 
+  // Enhanced debugging useEffect
   useEffect(() => {
     const userId = localStorage.getItem('userId');
-    if (userId) {
-      axios.get(`${API_URL}/api/user/${userId}/usage`).then(res => {
-        setUsage(res.data.usage);
-        setIsSubscribed(res.data.isSubscribed);
-      }).catch(() => {});
-    }
+    
+    // Set debug info
+    setDebugInfo({
+      apiUrl: API_URL,
+      userId: userId,
+      nodeEnv: process.env.NODE_ENV,
+      hasUserId: !!userId,
+      currentUrl: window.location.href,
+      allEnvVars: Object.keys(process.env).filter(key => key.startsWith('REACT_APP_'))
+    });
+
+    console.log('🔍 EduEdge Debug Information:');
+    console.log('├── API URL:', API_URL);
+    console.log('├── User ID:', userId || 'NOT SET');
+    console.log('├── Environment:', process.env.NODE_ENV || 'development');
+    console.log('├── Current URL:', window.location.href);
+    console.log('├── Available React Env Vars:', Object.keys(process.env).filter(key => key.startsWith('REACT_APP_')));
+    console.log('└── LocalStorage keys:', Object.keys(localStorage));
+
+    // Test backend connectivity first
+    const testBackend = async () => {
+      try {
+        console.log('🔍 Testing backend connectivity...');
+        const healthResponse = await axios.get(`${API_URL}/health`, { timeout: 10000 });
+        console.log('✅ Backend health check passed:', healthResponse.data);
+        setBackendHealth(healthResponse.data);
+        
+        // If we have a userId, try to get usage
+        if (userId) {
+          const usageUrl = `${API_URL}/api/user/${userId}/usage`;
+          console.log('🔍 Attempting to fetch usage from:', usageUrl);
+          
+          try {
+            const usageResponse = await axios.get(usageUrl, { timeout: 10000 });
+            console.log('✅ Usage response received:', usageResponse.data);
+            setUsage(usageResponse.data.usage);
+            setIsSubscribed(usageResponse.data.isSubscribed);
+            setError(null);
+          } catch (usageError) {
+            console.error('❌ Usage fetch failed:');
+            console.error('├── Status:', usageError.response?.status);
+            console.error('├── Message:', usageError.message);
+            console.error('├── Response Data:', usageError.response?.data);
+            console.error('└── URL attempted:', usageUrl);
+            setError(`Usage fetch failed: ${usageError.response?.data?.message || usageError.message}`);
+          }
+        } else {
+          console.warn('⚠️ No userId found in localStorage');
+          console.log('📋 Available localStorage keys:', Object.keys(localStorage));
+        }
+        
+      } catch (healthError) {
+        console.error('❌ Backend health check failed:');
+        console.error('├── Message:', healthError.message);
+        console.error('├── Code:', healthError.code);
+        console.error('├── Response:', healthError.response?.data);
+        console.error('└── URL attempted:', `${API_URL}/health`);
+        setBackendHealth({ error: healthError.message });
+        setError(`Backend connection failed: ${healthError.message}`);
+      }
+    };
+
+    testBackend();
   }, []);
 
   useEffect(() => {
@@ -387,6 +571,7 @@ function ChatPage() {
         setIsSubscribed(usageRes.data.isSubscribed);
       }
     } catch (err) {
+      console.error('❌ Chat error:', err);
       setError(err.response?.data?.message || err.message || 'Something went wrong.');
       setMessages((msgs) => [...msgs, { role: 'assistant', content: 'Error: ' + (err.response?.data?.message || err.message), time: new Date() }]);
     } finally {
@@ -442,6 +627,18 @@ function ChatPage() {
             </>
           )}
         </div>
+      )}
+      
+      {/* Debug Info - Only show in development or when debug flag is set */}
+      {showDebug && (
+        <DebugInfo 
+          usage={usage}
+          isSubscribed={isSubscribed}
+          error={error}
+          backendHealth={backendHealth}
+          userId={localStorage.getItem('userId')}
+          showDebug={showDebug}
+        />
       )}
       
       {/* Usage warning notification */}

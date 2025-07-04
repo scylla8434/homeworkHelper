@@ -17,6 +17,27 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Enhanced logging middleware for debugging
+router.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${req.method} ${req.path}`);
+  
+  // Log important requests with more detail
+  if (req.path.includes('/user/') && req.path.includes('/usage')) {
+    console.log(`🔍 [USAGE REQUEST] User ID: ${req.params.id}`);
+    console.log(`🔍 [USAGE REQUEST] Origin: ${req.get('origin')}`);
+    console.log(`🔍 [USAGE REQUEST] User-Agent: ${req.get('user-agent')?.substring(0, 50)}...`);
+  }
+  
+  // Add CORS headers explicitly for debugging
+  res.header('Access-Control-Allow-Origin', req.get('origin'));
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  next();
+});
+
 // Set up multer for image uploads
 const uploadDir = path.join(__dirname, '../../uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -63,6 +84,48 @@ async function checkAndResetUsage(user) {
   }
   return user;
 }
+
+// DEBUG: Test endpoint to verify API is working
+router.get('/test', (req, res) => {
+  console.log('🧪 [TEST ENDPOINT] Called successfully');
+  res.json({
+    message: 'API is working',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    pythonAiUrl: process.env.PYTHON_AI_URL || 'not_set'
+  });
+});
+
+// DEBUG: Database connection test
+router.get('/db-test', async (req, res) => {
+  try {
+    console.log('🧪 [DB TEST] Testing database connection...');
+    const userCount = await User.countDocuments();
+    const questionCount = await Question.countDocuments();
+    console.log(`✅ [DB TEST] Found ${userCount} users, ${questionCount} questions`);
+    
+    res.json({
+      success: true,
+      mongodb: {
+        connected: mongoose.connection.readyState === 1,
+        userCount,
+        questionCount,
+        dbName: mongoose.connection.name
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('❌ [DB TEST] Database error:', err);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      mongodb: {
+        connected: false
+      }
+    });
+  }
+});
 
 // Image upload endpoint
 router.post('/upload', upload.single('image'), async (req, res) => {
@@ -194,10 +257,16 @@ router.get('/subscription/:userId', async (req, res) => {
 // Get user profile
 router.get('/user/:id', async (req, res) => {
   try {
+    console.log(`🔍 [USER PROFILE] Fetching profile for user: ${req.params.id}`);
     const user = await User.findById(req.params.id).select('name email phone');
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      console.log(`❌ [USER PROFILE] User not found: ${req.params.id}`);
+      return res.status(404).json({ message: 'User not found' });
+    }
+    console.log(`✅ [USER PROFILE] Found user: ${user.name} (${user.email})`);
     res.json(user);
   } catch (err) {
+    console.error(`❌ [USER PROFILE] Error:`, err);
     res.status(500).json({ message: 'Error fetching user profile' });
   }
 });
@@ -250,16 +319,142 @@ router.post('/user/:id/avatar', upload.single('avatar'), async (req, res) => {
   }
 });
 
-// --- USER USAGE ROUTE ---
+// --- ENHANCED USER USAGE ROUTE WITH DEBUGGING ---
 // Get usage data for a user
 router.get('/user/:id/usage', async (req, res) => {
+  const startTime = Date.now();
+  const userId = req.params.id;
+  
   try {
-    const user = await User.findById(req.params.id).select('usage subscription');
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    const isSubscribed = user.subscription && user.subscription.active;
-    res.json({ usage: user.usage, isSubscribed });
+    console.log(`🔍 [USAGE REQUEST] Starting usage fetch for user: ${userId}`);
+    console.log(`🔍 [USAGE REQUEST] MongoDB connection state: ${mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'}`);
+    
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      console.log(`❌ [USAGE REQUEST] Invalid ObjectId format: ${userId}`);
+      return res.status(400).json({ 
+        message: 'Invalid user ID format',
+        userId: userId,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // Find user with detailed logging
+    console.log(`🔍 [USAGE REQUEST] Querying database for user...`);
+    const user = await User.findById(userId).select('usage subscription usageResetAt name email');
+    
+    if (!user) {
+      console.log(`❌ [USAGE REQUEST] User not found in database: ${userId}`);
+      // Check if any users exist at all
+      const totalUsers = await User.countDocuments();
+      console.log(`🔍 [USAGE REQUEST] Total users in database: ${totalUsers}`);
+      
+      return res.status(404).json({ 
+        message: 'User not found',
+        userId: userId,
+        totalUsersInDb: totalUsers,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    console.log(`✅ [USAGE REQUEST] Found user: ${user.name} (${user.email})`);
+    console.log(`🔍 [USAGE REQUEST] User usage: ${user.usage}`);
+    console.log(`🔍 [USAGE REQUEST] User subscription:`, user.subscription);
+    
+    // Check and reset usage if needed
+    const updatedUser = await checkAndResetUsage(user);
+    const isSubscribed = !!(updatedUser.subscription && updatedUser.subscription.active);
+    
+    const responseData = { 
+      usage: updatedUser.usage || 0, 
+      isSubscribed: isSubscribed,
+      subscription: updatedUser.subscription,
+      usageResetAt: updatedUser.usageResetAt,
+      userName: updatedUser.name,
+      timestamp: new Date().toISOString(),
+      processingTime: Date.now() - startTime
+    };
+    
+    console.log(`✅ [USAGE REQUEST] Sending response:`, responseData);
+    res.json(responseData);
+    
   } catch (err) {
-    res.status(500).json({ message: 'Error fetching usage', error: err.message });
+    const processingTime = Date.now() - startTime;
+    console.error(`❌ [USAGE REQUEST] Error after ${processingTime}ms:`, err);
+    console.error(`❌ [USAGE REQUEST] Error stack:`, err.stack);
+    console.error(`❌ [USAGE REQUEST] MongoDB state:`, mongoose.connection.readyState);
+    
+    res.status(500).json({ 
+      message: 'Error fetching usage', 
+      error: err.message,
+      userId: userId,
+      mongoState: mongoose.connection.readyState,
+      processingTime: processingTime,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// DEBUG: List all users (for debugging only - remove in production)
+router.get('/debug/users', async (req, res) => {
+  try {
+    console.log('🧪 [DEBUG] Fetching all users...');
+    const users = await User.find({}).select('_id name email usage subscription').limit(10);
+    console.log(`🧪 [DEBUG] Found ${users.length} users`);
+    
+    res.json({
+      success: true,
+      userCount: users.length,
+      users: users.map(user => ({
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        usage: user.usage || 0,
+        isSubscribed: !!(user.subscription && user.subscription.active)
+      })),
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('❌ [DEBUG] Error fetching users:', err);
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+// DEBUG: Check specific user by email (for debugging)
+router.get('/debug/user-by-email/:email', async (req, res) => {
+  try {
+    const email = req.params.email;
+    console.log(`🧪 [DEBUG] Looking for user with email: ${email}`);
+    
+    const user = await User.findOne({ email }).select('_id name email usage subscription');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found by email',
+        email: email
+      });
+    }
+    
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        usage: user.usage || 0,
+        isSubscribed: !!(user.subscription && user.subscription.active),
+        subscription: user.subscription
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
   }
 });
 
