@@ -241,7 +241,7 @@ function Header() {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth(); // Fixed this line - removed require()
+  const { user, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [navHover, setNavHover] = useState('');
   const [dropdownHover, setDropdownHover] = useState('');
@@ -252,7 +252,6 @@ function Header() {
   const [userName, setUserName] = useState(user?.name || user?.email || '');
   const [userAvatar, setUserAvatar] = useState(user?.avatar);
   const isLoggedIn = !!user;
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Close dropdown on outside click
   React.useEffect(() => {
@@ -291,34 +290,8 @@ function Header() {
     { path: '/pricing', label: 'Pricing', icon: CreditCard },
   ];
 
-  // Close mobile menu on navigation
-  const handleMobileNav = (to) => {
-    setMobileMenuOpen(false);
-    navigate(to);
-  };
-
   return (
     <header style={styles.header}>
-      {/* Hamburger for mobile */}
-      <button
-        className="mobile-hamburger"
-        style={{
-          display: 'none',
-          background: 'none',
-          border: 'none',
-          fontSize: 28,
-          color: '#4f46e5',
-          marginRight: 16,
-          cursor: 'pointer',
-          alignItems: 'center',
-        }}
-        aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-        aria-expanded={mobileMenuOpen}
-        onClick={() => setMobileMenuOpen((v) => !v)}
-      >
-        {mobileMenuOpen ? '✖' : '☰'}
-      </button>
-      {/* Logo and nav (desktop) */}
       <div style={styles.leftSection}>
         <Link 
           to="/" 
@@ -332,7 +305,11 @@ function Header() {
           <img src="/logo.jpg" alt="EduEdge Logo" style={styles.logoImg} />
           <span style={styles.logoText}>EduEdge</span>
         </Link>
-        <nav style={styles.nav} className="desktop-nav">
+      </div>
+      
+      <div style={styles.rightSection}>
+        {/* Navigation Links */}
+        <nav style={styles.nav}>
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -351,9 +328,7 @@ function Header() {
             );
           })}
         </nav>
-      </div>
-      
-      <div style={styles.rightSection}>
+
         <button
           style={styles.themeToggle(themeHover)}
           onClick={toggleTheme}
@@ -461,70 +436,6 @@ function Header() {
         </div>
       </div>
       
-      {/* Mobile menu overlay */}
-      {mobileMenuOpen && (
-        <div className="mobile-menu-overlay" style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'rgba(0,0,0,0.18)',
-          zIndex: 9999,
-        }} onClick={() => setMobileMenuOpen(false)} />
-      )}
-      {/* Mobile menu drawer */}
-      <nav
-        className="mobile-menu"
-        style={{
-          display: mobileMenuOpen ? 'flex' : 'none',
-          flexDirection: 'column',
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '80vw',
-          maxWidth: 320,
-          height: '100vh',
-          background: '#fff',
-          boxShadow: '2px 0 16px 0 rgba(60,60,120,0.18)',
-          zIndex: 10000,
-          padding: '48px 0 0 0',
-          transition: 'left 0.3s',
-        }}
-        aria-label="Mobile navigation menu"
-      >
-        {navigationItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.path;
-          return (
-            <button
-              key={item.path}
-              onClick={() => handleMobileNav(item.path)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                color: isActive ? '#4f46e5' : '#222',
-                fontWeight: isActive ? 700 : 500,
-                fontSize: 18,
-                background: 'none',
-                border: 'none',
-                padding: '18px 32px',
-                width: '100%',
-                textAlign: 'left',
-                borderBottom: '1px solid #f3f4f6',
-                cursor: 'pointer',
-                outline: 'none',
-              }}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              <Icon size={20} />
-              {item.label}
-            </button>
-          );
-        })}
-      </nav>
-      
       <style>{`
         @keyframes fadeSlideDown {
           from {
@@ -559,5 +470,4 @@ function Header() {
   );
 }
 
-// Make sure to export as default
 export default Header;

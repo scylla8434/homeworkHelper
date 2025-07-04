@@ -24,19 +24,45 @@
     display: flex !important;
     flex-direction: row;
     align-items: center;
-    justify-content: flex-start;
-    gap: 0;
+    justify-content: space-between;
+    gap: 8px;
     min-height: 56px !important;
-    padding: 0 4px !important;
+    padding: 0 8px !important;
   }
+  
   header .logoText {
     font-size: 16px !important;
   }
+  
+  /* Ensure navigation links are visible and properly sized on mobile */
   header nav {
+    display: flex !important;
+    flex-direction: column !important;
     gap: 2px !important;
+    align-items: center;
   }
+  
+  header nav a {
+    font-size: 12px !important;
+    padding: 4px 6px !important;
+    min-width: auto !important;
+    white-space: nowrap;
+    width: 100%;
+    text-align: center;
+  }
+  
+  header nav a svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  
   header .profileSection {
     min-width: 0 !important;
+  }
+  
+  /* Hide user name on very small screens to save space */
+  header .userName {
+    display: none !important;
   }
 
   /* Sidebar: slide-in/out, overlay, hamburger always visible */
@@ -66,8 +92,10 @@
     padding: 8px 0 !important;
   }
 
-  /* Hide sidebar links if sidebar is closed */
-  nav:not([style*="width: 220px"]) a, nav:not([style*="width: 220px"]) button.logout, nav:not([style*="width: 220px"]) div {
+  /* Hide sidebar links if sidebar is closed - only target sidebar nav, not header nav */
+  nav[style*="position: fixed"]:not([style*="width: 220px"]) a, 
+  nav[style*="position: fixed"]:not([style*="width: 220px"]) button.logout, 
+  nav[style*="position: fixed"]:not([style*="width: 220px"]) div {
     display: none !important;
   }
 
@@ -153,77 +181,30 @@
   .bgDecor, .bgDecor2 {
     display: none !important;
   }
+}
 
-  /* Show hamburger, hide desktop nav */
-  .mobile-hamburger {
-    display: flex !important;
-    position: relative;
-    z-index: 11001;
-    background: none;
-    border: none;
-    align-items: center;
-    justify-content: center;
-    height: 48px;
-    width: 48px;
-    margin-left: 0;
-    margin-right: 8px;
-    padding: 0;
-    border-radius: 8px;
-    transition: background 0.2s;
+/* Additional styles for very small screens */
+@media (max-width: 480px) {
+  header {
+    padding: 0 4px !important;
   }
-  .mobile-hamburger:active, .mobile-hamburger:focus {
-    background: #f3f4f6;
-    outline: none;
+  
+  header nav {
+    gap: 1px !important;
   }
-  .desktop-nav {
+  
+  header nav a {
+    font-size: 10px !important;
+    padding: 3px 4px !important;
+  }
+  
+  header nav a svg {
+    width: 10px !important;
+    height: 10px !important;
+  }
+  
+  /* Hide navigation text on very small screens, show only icons */
+  header nav a span {
     display: none !important;
-  }
-  .mobile-menu {
-    display: flex !important;
-    flex-direction: column;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 80vw;
-    max-width: 320px;
-    height: 100vh;
-    background: #fff !important;
-    box-shadow: 2px 0 16px 0 rgba(60,60,120,0.18);
-    z-index: 99999 !important;
-    padding: 48px 0 0 0;
-    transition: left 0.3s;
-    border-top-right-radius: 18px;
-    border-bottom-right-radius: 18px;
-    border: 2px solid red !important; /* DEBUG: Remove after confirming visibility */
-  }
-  .mobile-menu button {
-    font-size: 18px;
-    padding: 18px 32px;
-    border: none;
-    background: none;
-    text-align: left;
-    width: 100%;
-    color: #222;
-    border-bottom: 1px solid #f3f4f6;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .mobile-menu button[aria-current="page"] {
-    color: #4f46e5;
-    font-weight: 700;
-    background: #f3f4f6;
-  }
-  .mobile-menu-overlay {
-    display: block !important;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0,0,0,0.18);
-    z-index: 9999;
   }
 }
