@@ -8,6 +8,6 @@ co = cohere.Client(api_key)
 response = co.generate(
     model='command',
     prompt=question,
-    max_tokens=256
+    max_tokens=256 
 )
 print(response.generations[0].text.strip())

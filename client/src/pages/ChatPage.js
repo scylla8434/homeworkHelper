@@ -1,191 +1,303 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import { 
+  Send, 
+  Paperclip, 
+  User, 
+  Bot, 
+  Clock, 
+  AlertCircle,
+  Loader2,
+  CheckCircle,
+  Crown
+} from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const FREE_USER_LIMIT = 10; // Keep in sync with backend
 
 const styles = {
   chatWrapper: {
-    maxWidth: 700,
+    maxWidth: 800,
     margin: '0 auto',
     width: '100%',
     display: 'flex',
     flexDirection: 'column',
-    minHeight: 500,
-    background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)',
-    borderRadius: 18,
-    boxShadow: '0 6px 32px 0 rgba(60,60,120,0.10)',
-    padding: 0,
+    minHeight: 600,
+    background: '#ffffff',
+    borderRadius: 16,
+    boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
+    border: '1px solid #e5e7eb',
     overflow: 'hidden',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   },
+  
+  usageBar: {
+    padding: '12px 24px',
+    background: 'linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%)',
+    borderBottom: '1px solid #e5e7eb',
+    fontSize: 14,
+    fontWeight: 600,
+    textAlign: 'center',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  
+  usageBarSubscribed: {
+    color: '#059669',
+  },
+  
+  usageBarFree: {
+    color: '#4f46e5',
+  },
+  
+  usageWarning: {
+    background: '#fef3c7',
+    color: '#92400e',
+    border: '1px solid #fde68a',
+    borderRadius: 8,
+    margin: '16px 24px',
+    padding: '12px 16px',
+    textAlign: 'center',
+    fontWeight: 500,
+    fontSize: 14,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  
   chatBox: {
     flex: 1,
-    minHeight: 340,
-    maxHeight: 480,
+    minHeight: 400,
+    maxHeight: 500,
     overflowY: 'auto',
-    background: 'rgba(255,255,255,0.95)',
-    padding: 32,
-    borderBottom: '1px solid #e5e7eb',
-    transition: 'box-shadow 0.3s',
+    background: '#fafafa',
+    padding: '24px',
     display: 'flex',
     flexDirection: 'column',
-    gap: 8,
-    position: 'relative',
+    gap: 16,
+    scrollBehavior: 'smooth',
   },
-  chatBgDecor: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    pointerEvents: 'none',
-    zIndex: 0,
-    background: 'radial-gradient(circle at 80% 10%, #6366f1 0%, transparent 60%), radial-gradient(circle at 10% 90%, #60a5fa 0%, transparent 70%)',
-    opacity: 0.08,
-  },
+  
   message: role => ({
     display: 'flex',
     flexDirection: role === 'user' ? 'row-reverse' : 'row',
-    alignItems: 'flex-end',
-    margin: '8px 0',
+    alignItems: 'flex-start',
     gap: 12,
     opacity: 1,
-    animation: 'fadeInMsg 0.4s',
-    zIndex: 1,
+    animation: 'slideInUp 0.3s ease-out',
   }),
-  bubble: role => ({
-    background: role === 'user' ? 'linear-gradient(90deg, #6366f1 0%, #60a5fa 100%)' : '#fff',
-    color: role === 'user' ? '#fff' : '#23293a',
-    borderRadius: 18,
-    padding: '14px 20px',
-    maxWidth: '70%',
-    fontSize: 16,
-    boxShadow: '0 2px 12px 0 rgba(60,60,120,0.08)',
-    wordBreak: 'break-word',
-    position: 'relative',
-    transition: 'background 0.3s',
-    zIndex: 1,
-    border: role === 'user' ? '2px solid #6366f1' : '1px solid #e5e7eb',
-    fontFamily: 'Inter, Segoe UI, Arial, sans-serif',
-  }),
+  
   avatar: role => ({
-    width: 40,
-    height: 40,
-    borderRadius: '50%',
-    background: role === 'user' ? 'linear-gradient(90deg, #6366f1 0%, #60a5fa 100%)' : '#e0e7ef',
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    background: role === 'user' ? '#4f46e5' : '#ffffff',
+    border: role === 'user' ? 'none' : '2px solid #e5e7eb',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: role === 'user' ? '#fff' : '#6366f1',
-    fontWeight: 700,
-    fontSize: 22,
-    boxShadow: '0 1px 4px 0 rgba(60,60,120,0.08)',
+    color: role === 'user' ? '#ffffff' : '#6b7280',
     flexShrink: 0,
-    border: role === 'user' ? '2px solid #6366f1' : '1px solid #e0e7ef',
-    transition: 'box-shadow 0.2s, border 0.2s',
+    marginTop: 2,
   }),
-  bubbleMeta: role => ({
+  
+  messageContent: role => ({
+    maxWidth: '70%',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+  }),
+  
+  bubble: role => ({
+    background: role === 'user' ? '#4f46e5' : '#ffffff',
+    color: role === 'user' ? '#ffffff' : '#1f2937',
+    borderRadius: role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+    padding: '12px 16px',
+    fontSize: 15,
+    lineHeight: 1.5,
+    boxShadow: role === 'user' ? '0 2px 8px rgba(79, 70, 229, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.08)',
+    border: role === 'user' ? 'none' : '1px solid #e5e7eb',
+    wordBreak: 'break-word',
+    position: 'relative',
+  }),
+  
+  messageMeta: role => ({
     fontSize: 12,
-    color: role === 'user' ? '#e0e7ef' : '#94a3b8',
-    marginTop: 6,
-    textAlign: 'right',
-    textShadow: role === 'user' ? '0 1px 2px #6366f1' : 'none',
-    fontWeight: 500,
+    color: '#9ca3af',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+    justifyContent: role === 'user' ? 'flex-end' : 'flex-start',
   }),
+  
+  preview: {
+    maxWidth: 200,
+    maxHeight: 150,
+    borderRadius: 8,
+    marginTop: 8,
+    border: '1px solid #e5e7eb',
+    objectFit: 'cover',
+  },
+  
   formBar: {
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
-    background: '#fff',
-    padding: '16px 20px',
-    borderRadius: 0,
-    boxShadow: '0 -2px 8px 0 rgba(60,60,120,0.04)',
-    position: 'relative',
+    gap: 12,
+    background: '#ffffff',
+    padding: '20px 24px',
+    borderTop: '1px solid #e5e7eb',
   },
+  
+  inputContainer: {
+    flex: 1,
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    background: '#f9fafb',
+    borderRadius: 12,
+    border: '1px solid #e5e7eb',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+  },
+  
+  inputContainerFocused: {
+    borderColor: '#4f46e5',
+    boxShadow: '0 0 0 3px rgba(79, 70, 229, 0.1)',
+  },
+  
   input: {
     flex: 1,
     padding: '12px 16px',
-    borderRadius: 24,
-    border: '1px solid #d1d5db',
-    fontSize: 16,
-    outline: 'none',
-    background: '#f8fafc',
-    transition: 'border 0.2s',
-    marginRight: 8,
-  },
-  fileLabel: {
-    display: 'flex',
-    alignItems: 'center',
-    cursor: 'pointer',
-    color: '#6366f1',
-    fontSize: 22,
-    marginRight: 8,
-    borderRadius: 8,
-    padding: 4,
-    transition: 'background 0.2s',
-  },
-  fileInput: {
-    display: 'none',
-  },
-  preview: {
-    maxWidth: 120,
-    margin: '8px 0',
-    borderRadius: 10,
-    boxShadow: '0 2px 8px 0 rgba(60,60,120,0.10)',
-  },
-  sendBtn: {
-    background: 'linear-gradient(90deg, #6366f1 0%, #60a5fa 100%)',
     border: 'none',
-    borderRadius: '50%',
-    width: 44,
-    height: 44,
-    color: '#fff',
-    fontSize: 22,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    boxShadow: '0 2px 8px 0 rgba(99,102,241,0.10)',
-    transition: 'background 0.2s',
-    marginLeft: 4,
+    background: 'transparent',
+    fontSize: 15,
     outline: 'none',
+    color: '#1f2937',
+    placeholder: '#9ca3af',
   },
-  loading: {
-    color: '#6366f1',
-    fontStyle: 'italic',
-    margin: '12px 0',
-    textAlign: 'center',
+  
+  fileButton: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    background: '#f3f4f6',
+    border: '1px solid #d1d5db',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    color: '#6b7280',
   },
+  
+  fileButtonHover: {
+    background: '#e5e7eb',
+    borderColor: '#9ca3af',
+    color: '#4b5563',
+  },
+  
+  sendButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    background: '#4f46e5',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    color: '#ffffff',
+  },
+  
+  sendButtonDisabled: {
+    background: '#d1d5db',
+    cursor: 'not-allowed',
+    color: '#9ca3af',
+  },
+  
+  sendButtonHover: {
+    background: '#4338ca',
+    transform: 'translateY(-1px)',
+    boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)',
+  },
+  
+  loadingContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    padding: '16px',
+    color: '#6b7280',
+    fontSize: 14,
+    fontWeight: 500,
+  },
+  
   error: {
-    color: '#ef4444',
     background: '#fef2f2',
     border: '1px solid #fecaca',
-    borderRadius: 10,
-    padding: '10px 16px',
-    margin: '12px 0',
-    textAlign: 'center',
-    fontWeight: 600,
-    fontSize: 15,
-    boxShadow: '0 1px 4px 0 rgba(239,68,68,0.08)',
-    animation: 'fadeIn 0.5s',
+    borderRadius: 12,
+    padding: '12px 16px',
+    color: '#dc2626',
+    fontSize: 14,
+    fontWeight: 500,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    margin: '8px 0',
+  },
+  
+  typingIndicator: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    background: '#ffffff',
+    padding: '12px 16px',
+    borderRadius: '18px 18px 18px 4px',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+    border: '1px solid #e5e7eb',
+    color: '#6b7280',
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  
+  previewContainer: {
+    position: 'relative',
+    display: 'inline-block',
+    margin: '0 8px',
+  },
+  
+  previewImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+    objectFit: 'cover',
+    border: '1px solid #e5e7eb',
+  },
+  
+  removePreview: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 18,
+    height: 18,
+    borderRadius: '50%',
+    background: '#dc2626',
+    color: '#ffffff',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: 12,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 };
 
-function Spinner() {
-  return (
-    <span style={{ display: 'inline-block', width: 22, height: 22 }} aria-label="Loading">
-      <svg width="22" height="22" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="22" cy="22" r="20" stroke="#6366f1" strokeWidth="4" opacity="0.2" />
-        <path d="M42 22c0-11.046-8.954-20-20-20" stroke="#6366f1" strokeWidth="4" strokeLinecap="round">
-          <animateTransform attributeName="transform" type="rotate" from="0 22 22" to="360 22 22" dur="0.8s" repeatCount="indefinite" />
-        </path>
-      </svg>
-    </span>
-  );
+function LoadingSpinner({ size = 16 }) {
+  return <Loader2 size={size} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />;
 }
 
 function formatTime(date) {
@@ -205,7 +317,11 @@ function ChatPage() {
   const [usage, setUsage] = useState(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [usageWarning, setUsageWarning] = useState(null);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [fileButtonHover, setFileButtonHover] = useState(false);
+  const [sendButtonHover, setSendButtonHover] = useState(false);
   const chatEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (chatEndRef.current) {
@@ -278,8 +394,8 @@ function ChatPage() {
       setImage(null);
       setImagePreview(null);
       // Clear file input value
-      if (document.getElementById('imageInput')) {
-        document.getElementById('imageInput').value = '';
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
       setLoading(false);
       setTimeout(() => setAiTyping(false), 600);
@@ -292,129 +408,217 @@ function ChatPage() {
     setImagePreview(file ? URL.createObjectURL(file) : null);
   };
 
+  const removeImage = () => {
+    setImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleReaction = (msgIdx, emoji) => {
     setReactions(prev => ({ ...prev, [msgIdx]: prev[msgIdx] === emoji ? null : emoji }));
   };
 
-  // Remove emojis from reactions
-  // const reactionEmojis = ['👍', '❤️', '😂', '🤔', '👏'];
-  const reactionEmojis = [];
+  const isFormValid = (question.trim() || image) && !loading;
 
   return (
     <div style={styles.chatWrapper}>
       {/* Usage bar */}
       {usage !== null && (
-        <div style={{padding: '10px 20px', background: '#f1f5f9', borderBottom: '1px solid #e5e7eb', fontSize: 15, color: '#6366f1', fontWeight: 600, textAlign: 'center'}}>
+        <div style={{
+          ...styles.usageBar,
+          ...(isSubscribed ? styles.usageBarSubscribed : styles.usageBarFree)
+        }}>
           {isSubscribed ? (
-            <>Unlimited chats (subscribed)</>
+            <>
+              <Crown size={16} />
+              Unlimited chats (subscribed)
+            </>
           ) : (
-            <>Usage: {usage} / {FREE_USER_LIMIT} free chats this month</>
+            <>
+              <CheckCircle size={16} />
+              Usage: {usage} / {FREE_USER_LIMIT} free chats this month
+            </>
           )}
         </div>
       )}
+      
       {/* Usage warning notification */}
       {usageWarning && (
-        <div style={{background:'#fffbe6', color:'#b45309', border:'1px solid #fde68a', borderRadius:8, margin:'10px 20px', padding:'10px', textAlign:'center', fontWeight:600, fontSize:15}}>
+        <div style={styles.usageWarning}>
+          <AlertCircle size={16} />
           {usageWarning}
         </div>
       )}
+      
       <div style={styles.chatBox} aria-live="polite" aria-label="Chat messages">
-        <div style={styles.chatBgDecor}></div>
         {messages.map((msg, i) => (
-          <div key={i} style={{...styles.message(msg.role), animation: 'fadeInMsg 0.4s, popIn 0.3s'}}>
+          <div key={i} style={styles.message(msg.role)}>
             <div style={styles.avatar(msg.role)} aria-label={msg.role === 'user' ? 'User' : 'AI'}>
-              {msg.role === 'user' ? (
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style={{display:'block'}}><circle cx="12" cy="8" r="4" fill="#fff"/><path d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4" fill="#fff"/></svg>
-              ) : (
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style={{display:'block'}}><rect x="4" y="4" width="16" height="16" rx="8" fill="#6366f1"/><path d="M8 10h8M8 14h5" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
-              )}
+              {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
             </div>
-            <div style={styles.bubble(msg.role)}>
-              {msg.content}
-              {msg.image && <div><img src={msg.image} alt="uploaded" style={styles.preview} /></div>}
-              <div style={styles.bubbleMeta(msg.role)}>{msg.role === 'user' ? 'You' : 'AI'} • {formatTime(msg.time || new Date())}</div>
-              {/* Reactions */}
-              <div style={{ marginTop: 6, display: 'flex', gap: 6 }}>
-                {reactionEmojis.map(emoji => (
-                  <button
-                    key={emoji}
-                    style={{
-                      background: reactions[i] === emoji ? '#6366f1' : '#f3f4f6',
-                      color: reactions[i] === emoji ? '#fff' : '#6366f1',
-                      border: 'none',
-                      borderRadius: 8,
-                      fontSize: 18,
-                      padding: '2px 7px',
-                      cursor: 'pointer',
-                      outline: 'none',
-                      transition: 'background 0.2s, color 0.2s',
-                    }}
-                    aria-label={`React with ${emoji}`}
-                    onClick={() => handleReaction(i, emoji)}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-                {reactions[i] && <span style={{ marginLeft: 4, fontSize: 16 }}>{reactions[i]}</span>}
+            <div style={styles.messageContent(msg.role)}>
+              <div style={styles.bubble(msg.role)}>
+                {msg.content}
+                {msg.image && (
+                  <div>
+                    <img src={msg.image} alt="uploaded" style={styles.preview} />
+                  </div>
+                )}
+              </div>
+              <div style={styles.messageMeta(msg.role)}>
+                <Clock size={12} />
+                {msg.role === 'user' ? 'You' : 'EduEdge'} • {formatTime(msg.time || new Date())}
               </div>
             </div>
           </div>
         ))}
+        
         {/* Typing indicator */}
         {aiTyping && (
           <div style={styles.message('assistant')}>
             <div style={styles.avatar('assistant')} aria-label="AI">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style={{display:'block'}}><rect x="4" y="4" width="16" height="16" rx="8" fill="#6366f1"/><path d="M8 10h8M8 14h5" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
+              <Bot size={20} />
             </div>
-            <div style={{...styles.bubble('assistant'), fontStyle: 'italic', opacity: 0.7, display: 'flex', alignItems: 'center', gap: 8}}>
-              <Spinner /> Eduedge is typing...
+            <div style={styles.messageContent('assistant')}>
+              <div style={styles.typingIndicator}>
+                <LoadingSpinner size={14} />
+                EduEdge is typing...
+              </div>
             </div>
           </div>
         )}
+        
         {loading && !aiTyping && (
-          <div style={styles.loading}><Spinner /> <span>Eduedge is thinking...</span></div>
+          <div style={styles.loadingContainer}>
+            <LoadingSpinner size={16} />
+            <span>EduEdge is thinking...</span>
+          </div>
         )}
+        
         {error && (
-          <div style={styles.error} role="alert">{error}</div>
+          <div style={styles.error} role="alert">
+            <AlertCircle size={16} />
+            {error}
+          </div>
         )}
+        
         <div ref={chatEndRef} />
       </div>
+      
       <form onSubmit={handleSend} style={styles.formBar} aria-label="Send a message">
-        <label htmlFor="imageInput" style={styles.fileLabel} title="Attach image">
-          <span role="img" aria-label="attach" style={{fontSize:22}}>📎</span>
+        <div
+          style={{
+            ...styles.fileButton,
+            ...(fileButtonHover ? styles.fileButtonHover : {})
+          }}
+          onMouseEnter={() => setFileButtonHover(true)}
+          onMouseLeave={() => setFileButtonHover(false)}
+          onClick={() => fileInputRef.current?.click()}
+          title="Attach image"
+        >
+          <Paperclip size={18} />
           <input
-            id="imageInput"
+            ref={fileInputRef}
             type="file"
             accept="image/*"
             onChange={handleImageChange}
-            style={styles.fileInput}
+            style={{ display: 'none' }}
             disabled={loading}
             aria-label="Upload image"
           />
-        </label>
-        <input
-          id="chatInput"
-          type="text"
-          value={question}
-          onChange={e => setQuestion(e.target.value)}
-          placeholder="Type your question..."
-          style={styles.input}
-          disabled={loading}
-          aria-label="Type your question"
-        />
-        {imagePreview && <img src={imagePreview} alt="preview" style={styles.preview} />}
-        <button type="submit" style={styles.sendBtn} disabled={loading || (!question.trim() && !image)} aria-busy={loading} aria-label="Send message">
-          <span role="img" aria-label="send" style={{fontSize:22}}>📤</span>
+        </div>
+        
+        <div style={{
+          ...styles.inputContainer,
+          ...(inputFocused ? styles.inputContainerFocused : {})
+        }}>
+          <input
+            type="text"
+            value={question}
+            onChange={e => setQuestion(e.target.value)}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
+            placeholder="Type your question..."
+            style={styles.input}
+            disabled={loading}
+            aria-label="Type your question"
+          />
+          
+          {imagePreview && (
+            <div style={styles.previewContainer}>
+              <img src={imagePreview} alt="preview" style={styles.previewImage} />
+              <button
+                type="button"
+                style={styles.removePreview}
+                onClick={removeImage}
+                aria-label="Remove image"
+              >
+                ×
+              </button>
+            </div>
+          )}
+        </div>
+        
+        <button
+          type="submit"
+          style={{
+            ...styles.sendButton,
+            ...(!isFormValid ? styles.sendButtonDisabled : {}),
+            ...(sendButtonHover && isFormValid ? styles.sendButtonHover : {})
+          }}
+          onMouseEnter={() => setSendButtonHover(true)}
+          onMouseLeave={() => setSendButtonHover(false)}
+          disabled={!isFormValid}
+          aria-busy={loading}
+          aria-label="Send message"
+        >
+          {loading ? <LoadingSpinner size={18} /> : <Send size={18} />}
         </button>
       </form>
+      
       <style>{`
-        @keyframes fadeInMsg {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
-        @keyframes popIn {
-          0% { transform: scale(0.95); }
-          100% { transform: scale(1); }
+        
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
+        input::placeholder {
+          color: #9ca3af;
+        }
+        
+        /* Custom scrollbar */
+        *::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        *::-webkit-scrollbar-track {
+          background: #f1f5f9;
+        }
+        
+        *::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 3px;
+        }
+        
+        *::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
         }
       `}</style>
     </div>
