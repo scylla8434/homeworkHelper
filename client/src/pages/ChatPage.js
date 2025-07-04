@@ -82,48 +82,6 @@ const getStyles = (theme) => ({
     gap: 8,
   },
   
-  debugBar: {
-    background: theme === 'dark' ? '#0f172a' : '#f9fafb',
-    border: theme === 'dark' 
-      ? '1px solid rgba(148, 163, 184, 0.2)' 
-      : '1px solid #e5e7eb',
-    borderRadius: 8,
-    margin: '16px 24px',
-    padding: '12px 16px',
-    fontSize: 12,
-    fontFamily: 'monospace',
-    color: theme === 'dark' ? '#cbd5e1' : '#374151',
-  },
-  
-  debugSection: {
-    marginBottom: 8,
-    paddingBottom: 8,
-    borderBottom: theme === 'dark' 
-      ? '1px solid rgba(148, 163, 184, 0.2)' 
-      : '1px solid #e5e7eb',
-  },
-  
-  debugLabel: {
-    fontWeight: 600,
-    color: theme === 'dark' ? '#f8fafc' : '#1f2937',
-    display: 'inline-block',
-    minWidth: 120,
-  },
-  
-  debugValue: {
-    color: theme === 'dark' ? '#94a3b8' : '#6b7280',
-  },
-  
-  debugError: {
-    color: theme === 'dark' ? '#f87171' : '#dc2626',
-    fontWeight: 500,
-  },
-  
-  debugSuccess: {
-    color: theme === 'dark' ? '#34d399' : '#059669',
-    fontWeight: 500,
-  },
-  
   chatBox: {
     flex: 1,
     minHeight: 400,
@@ -409,95 +367,6 @@ function formatTime(date) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// Debug Info Component
-function DebugInfo({ 
-  usage, 
-  isSubscribed, 
-  error, 
-  backendHealth, 
-  userId,
-  showDebug = true,
-  theme
-}) {
-  const styles = getStyles(theme);
-  
-  if (!showDebug) return null;
-  
-  return (
-    <div style={styles.debugBar}>
-      <div style={styles.debugSection}>
-        <span style={styles.debugLabel}>🔍 Debug Mode:</span>
-        <span style={styles.debugValue}>Active (Remove in production)</span>
-      </div>
-      
-      <div style={styles.debugSection}>
-        <div>
-          <span style={styles.debugLabel}>API URL:</span>
-          <span style={styles.debugValue}>{API_URL}</span>
-        </div>
-        <div>
-          <span style={styles.debugLabel}>Environment:</span>
-          <span style={styles.debugValue}>{process.env.NODE_ENV || 'development'}</span>
-        </div>
-        <div>
-          <span style={styles.debugLabel}>Theme:</span>
-          <span style={styles.debugValue}>{theme}</span>
-        </div>
-        <div>
-          <span style={styles.debugLabel}>Current URL:</span>
-          <span style={styles.debugValue}>{window.location.href}</span>
-        </div>
-      </div>
-      
-      <div style={styles.debugSection}>
-        <div>
-          <span style={styles.debugLabel}>User ID:</span>
-          <span style={userId ? styles.debugSuccess : styles.debugError}>
-            {userId || 'NOT SET'}
-          </span>
-        </div>
-        <div>
-          <span style={styles.debugLabel}>Usage State:</span>
-          <span style={styles.debugValue}>
-            {usage === null ? 'null' : usage}
-          </span>
-        </div>
-        <div>
-          <span style={styles.debugLabel}>Subscribed:</span>
-          <span style={styles.debugValue}>{isSubscribed ? 'Yes' : 'No'}</span>
-        </div>
-      </div>
-      
-      <div style={styles.debugSection}>
-        <div>
-          <span style={styles.debugLabel}>Backend Health:</span>
-          <span style={backendHealth?.status === 'healthy' ? styles.debugSuccess : styles.debugError}>
-            {backendHealth ? 
-              (backendHealth.status || backendHealth.error || 'Unknown') : 
-              'Checking...'
-            }
-          </span>
-        </div>
-        {backendHealth?.mongodb && (
-          <div>
-            <span style={styles.debugLabel}>MongoDB:</span>
-            <span style={backendHealth.mongodb === 'connected' ? styles.debugSuccess : styles.debugError}>
-              {backendHealth.mongodb}
-            </span>
-          </div>
-        )}
-      </div>
-      
-      {error && (
-        <div>
-          <span style={styles.debugLabel}>Last Error:</span>
-          <span style={styles.debugError}>{error}</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function ChatPage() {
   const { theme } = useTheme();
   const [question, setQuestion] = useState('');
@@ -514,15 +383,11 @@ function ChatPage() {
   const [inputFocused, setInputFocused] = useState(false);
   const [fileButtonHover, setFileButtonHover] = useState(false);
   const [sendButtonHover, setSendButtonHover] = useState(false);
-  const [backendHealth, setBackendHealth] = useState(null);
-  const [debugInfo, setDebugInfo] = useState(null);
+  const [userType, setUserType] = useState('guest'); // guest or registered
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const styles = getStyles(theme);
-
-  // Show debug mode only in development or when localStorage debug flag is set
-  const showDebug = process.env.NODE_ENV === 'development' || localStorage.getItem('debug') === 'true';
 
   useEffect(() => {
     if (chatEndRef.current) {
@@ -530,78 +395,62 @@ function ChatPage() {
     }
   }, [messages, loading]);
 
-  // Enhanced debugging useEffect
+  // Initialize user data on component mount
   useEffect(() => {
     const userId = localStorage.getItem('userId');
     
-    // Set debug info
-    setDebugInfo({
-      apiUrl: API_URL,
-      userId: userId,
-      nodeEnv: process.env.NODE_ENV,
-      hasUserId: !!userId,
-      currentUrl: window.location.href,
-      theme: theme,
-      allEnvVars: Object.keys(process.env).filter(key => key.startsWith('REACT_APP_'))
-    });
-
+    // Debug logging (only console, no UI)
     console.log('🔍 EduEdge Debug Information:');
     console.log('├── API URL:', API_URL);
-    console.log('├── User ID:', userId || 'NOT SET');
+    console.log('├── User ID:', userId || 'NOT SET (Guest Mode)');
     console.log('├── Environment:', process.env.NODE_ENV || 'development');
     console.log('├── Theme:', theme);
-    console.log('├── Current URL:', window.location.href);
-    console.log('├── Available React Env Vars:', Object.keys(process.env).filter(key => key.startsWith('REACT_APP_')));
-    console.log('└── LocalStorage keys:', Object.keys(localStorage));
+    console.log('└── Current URL:', window.location.href);
 
-    // Test backend connectivity first
-    const testBackend = async () => {
+    // Test backend connectivity and get user data
+    const initializeUserData = async () => {
       try {
+        // Test backend health
         console.log('🔍 Testing backend connectivity...');
-        const healthResponse = await axios.get(`${API_URL}/health`, { timeout: 10000 });
-        console.log('✅ Backend health check passed:', healthResponse.data);
-        setBackendHealth(healthResponse.data);
+        await axios.get(`${API_URL}/health`, { timeout: 10000 });
+        console.log('✅ Backend health check passed');
         
-        // If we have a userId, try to get usage
-        if (userId) {
-          const usageUrl = `${API_URL}/api/user/${userId}/usage`;
-          console.log('🔍 Attempting to fetch usage from:', usageUrl);
-          
+        // If we have a userId, try to get usage data
+        if (userId && userId !== 'demo' && userId !== 'guest') {
           try {
-            const usageResponse = await axios.get(usageUrl, { timeout: 10000 });
-            console.log('✅ Usage response received:', usageResponse.data);
-            setUsage(usageResponse.data.usage);
-            setIsSubscribed(usageResponse.data.isSubscribed);
+            console.log('🔍 Fetching user usage data...');
+            const usageResponse = await axios.get(`${API_URL}/api/user/${userId}/usage`, { timeout: 10000 });
+            console.log('✅ Usage data received:', usageResponse.data);
+            
+            setUsage(usageResponse.data.usage || 0);
+            setIsSubscribed(usageResponse.data.isSubscribed || false);
+            setUserType(usageResponse.data.userType || 'registered');
             setError(null);
           } catch (usageError) {
-            console.error('❌ Usage fetch failed:');
-            console.error('├── Status:', usageError.response?.status);
-            console.error('├── Message:', usageError.message);
-            console.error('├── Response Data:', usageError.response?.data);
-            console.error('└── URL attempted:', usageUrl);
-            setError(`Usage fetch failed: ${usageError.response?.data?.message || usageError.message}`);
+            console.warn('⚠️ Could not fetch usage data, continuing in guest mode:', usageError.message);
+            setUserType('guest');
+            setUsage(0);
+            setIsSubscribed(false);
           }
         } else {
-          console.warn('⚠️ No userId found in localStorage');
-          console.log('📋 Available localStorage keys:', Object.keys(localStorage));
+          console.log('🎭 Operating in guest mode');
+          setUserType('guest');
+          setUsage(0);
+          setIsSubscribed(false);
         }
         
       } catch (healthError) {
-        console.error('❌ Backend health check failed:');
-        console.error('├── Message:', healthError.message);
-        console.error('├── Code:', healthError.code);
-        console.error('├── Response:', healthError.response?.data);
-        console.error('└── URL attempted:', `${API_URL}/health`);
-        setBackendHealth({ error: healthError.message });
-        setError(`Backend connection failed: ${healthError.message}`);
+        console.error('❌ Backend connection failed:', healthError.message);
+        setError('Connection to server failed. Please check your internet connection.');
       }
     };
 
-    testBackend();
+    initializeUserData();
   }, [theme]);
 
+  // Update usage warnings for registered users only
   useEffect(() => {
-    if (usage !== null && !isSubscribed) {
+    if (userType === 'registered' && usage !== null && !isSubscribed) {
       if (usage === FREE_USER_LIMIT - 1) {
         setUsageWarning('You have 1 free chat left this month!');
       } else if (usage >= FREE_USER_LIMIT - 3 && usage < FREE_USER_LIMIT - 1) {
@@ -612,45 +461,78 @@ function ChatPage() {
     } else {
       setUsageWarning(null);
     }
-  }, [usage, isSubscribed]);
+  }, [usage, isSubscribed, userType]);
 
   const handleSend = async (e) => {
     e.preventDefault();
     setError(null);
     if (!question.trim() && !image) return;
+    
     setMessages((msgs) => [...msgs, { role: 'user', content: question, image: imagePreview, time: new Date() }]);
     setLoading(true);
     setAiTyping(true);
+    
     let imageUrl = null;
     let extractedText = '';
+    
     try {
+      // Handle image upload if present
       if (image) {
         const formData = new FormData();
         formData.append('image', image);
-        const uploadRes = await axios.post(`${API_URL}/api/upload`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const uploadRes = await axios.post(`${API_URL}/api/upload`, formData, { 
+          headers: { 'Content-Type': 'multipart/form-data' } 
+        });
         imageUrl = uploadRes.data.imageUrl;
-        // OCR: extract text from image
-        const ocrRes = await axios.post(`${API_URL}/api/ocr`, { imageUrl });
-        extractedText = ocrRes.data.text;
+        
+        // OCR: extract text from image (if OCR endpoint exists)
+        try {
+          const ocrRes = await axios.post(`${API_URL}/api/ocr`, { imageUrl });
+          extractedText = ocrRes.data.text;
+        } catch (ocrError) {
+          console.log('OCR not available, continuing without text extraction');
+        }
       }
-      const userId = localStorage.getItem('userId') || 'demo';
+      
+      const userId = localStorage.getItem('userId') || 'guest';
+      
       // Enhanced prompt engineering for educational context
       let systemPrompt = `You are an expert educational assistant. Give clear, step-by-step, age-appropriate answers. If the question is about math, show all work. If it's science, explain concepts simply. If it's a language question, provide examples. Always encourage curiosity and a growth mindset. Avoid giving direct answers to homework but guide the student to learn.`;
       let fullPrompt = question.trim() ? `${systemPrompt}\n\nQuestion: ${question.trim()}` : `${systemPrompt}\n\nQuestion: ${extractedText}`;
+      
       // Simulate typing delay for AI
       await new Promise(res => setTimeout(res, 900));
-      const res = await axios.post(`${API_URL}/api/chat`, { question: fullPrompt, userId, imageUrl });
-      setMessages((msgs) => [...msgs, { role: 'assistant', content: res.data.answer, time: new Date() }]);
-      // Refresh usage after chat
-      if (userId && userId !== 'demo') {
-        const usageRes = await axios.get(`${API_URL}/api/user/${userId}/usage`);
-        setUsage(usageRes.data.usage);
-        setIsSubscribed(usageRes.data.isSubscribed);
+      
+      const res = await axios.post(`${API_URL}/api/chat`, { 
+        question: fullPrompt, 
+        userId, 
+        imageUrl 
+      });
+      
+      setMessages((msgs) => [...msgs, { 
+        role: 'assistant', 
+        content: res.data.answer, 
+        time: new Date() 
+      }]);
+      
+      // Update usage data if response includes it
+      if (res.data.usage !== undefined) {
+        setUsage(res.data.usage);
       }
+      
+      if (res.data.userType) {
+        setUserType(res.data.userType);
+      }
+      
     } catch (err) {
       console.error('❌ Chat error:', err);
-      setError(err.response?.data?.message || err.message || 'Something went wrong.');
-      setMessages((msgs) => [...msgs, { role: 'assistant', content: 'Error: ' + (err.response?.data?.message || err.message), time: new Date() }]);
+      const errorMessage = err.response?.data?.message || err.message || 'Something went wrong. Please try again.';
+      setError(errorMessage);
+      setMessages((msgs) => [...msgs, { 
+        role: 'assistant', 
+        content: `Sorry, I encountered an error: ${errorMessage}`, 
+        time: new Date() 
+      }]);
     } finally {
       setQuestion('');
       setImage(null);
@@ -686,8 +568,8 @@ function ChatPage() {
 
   return (
     <div style={styles.chatWrapper}>
-      {/* Usage bar */}
-      {usage !== null && (
+      {/* Usage bar - only show for registered users */}
+      {userType === 'registered' && usage !== null && (
         <div style={{
           ...styles.usageBar,
           ...(isSubscribed ? styles.usageBarSubscribed : styles.usageBarFree)
@@ -706,21 +588,8 @@ function ChatPage() {
         </div>
       )}
       
-      {/* Debug Info - Only show in development or when debug flag is set */}
-      {showDebug && (
-        <DebugInfo 
-          usage={usage}
-          isSubscribed={isSubscribed}
-          error={error}
-          backendHealth={backendHealth}
-          userId={localStorage.getItem('userId')}
-          showDebug={showDebug}
-          theme={theme}
-        />
-      )}
-      
-      {/* Usage warning notification */}
-      {usageWarning && (
+      {/* Usage warning notification - only for registered users */}
+      {userType === 'registered' && usageWarning && (
         <div style={styles.usageWarning}>
           <AlertCircle size={16} />
           {usageWarning}
@@ -759,7 +628,7 @@ function ChatPage() {
             <div style={styles.messageContent('assistant')}>
               <div style={styles.typingIndicator}>
                 <LoadingSpinner size={14} />
-                EduEdge is typing...
+                EduEdge is thinking...
               </div>
             </div>
           </div>
@@ -768,7 +637,7 @@ function ChatPage() {
         {loading && !aiTyping && (
           <div style={styles.loadingContainer}>
             <LoadingSpinner size={16} />
-            <span>EduEdge is thinking...</span>
+            <span>EduEdge is processing...</span>
           </div>
         )}
         

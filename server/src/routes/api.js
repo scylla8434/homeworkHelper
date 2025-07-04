@@ -22,13 +22,6 @@ router.use((req, res, next) => {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] ${req.method} ${req.path}`);
   
-  // Log important requests with more detail
-  if (req.path.includes('/user/') && req.path.includes('/usage')) {
-    console.log(`🔍 [USAGE REQUEST] User ID: ${req.params.id}`);
-    console.log(`🔍 [USAGE REQUEST] Origin: ${req.get('origin')}`);
-    console.log(`🔍 [USAGE REQUEST] User-Agent: ${req.get('user-agent')?.substring(0, 50)}...`);
-  }
-  
   // Add CORS headers explicitly for debugging
   res.header('Access-Control-Allow-Origin', req.get('origin'));
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -148,30 +141,83 @@ router.post('/chat', async (req, res) => {
     if (!question) return res.status(400).json({ message: 'Question is required' });
 
     let user = null;
-    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
-      user = await User.findById(userId);
-      if (!user) return res.status(404).json({ message: 'User not found' });
-      user = await checkAndResetUsage(user); // Reset usage if new month
-      const isSubscribed = user.subscription && user.subscription.active;
-      if (!isSubscribed && user.usage >= FREE_USER_LIMIT) {
-        return res.status(403).json({ message: 'Free usage limit reached. Please subscribe to continue.' });
+    let canChat = true;
+    let userType = 'guest';
+
+    // Check if userId is provided and valid
+    if (userId && userId !== 'demo' && mongoose.Types.ObjectId.isValid(userId)) {
+      try {
+        user = await User.findById(userId);
+        if (user) {
+          userType = 'registered';
+          user = await checkAndResetUsage(user); // Reset usage if new month
+          const isSubscribed = user.subscription && user.subscription.active;
+          
+          // Only check limits for registered users
+          if (!isSubscribed && user.usage >= FREE_USER_LIMIT) {
+            canChat = false;
+            return res.status(403).json({ 
+              message: 'Free usage limit reached. Please subscribe to continue.',
+              usage: user.usage,
+              limit: FREE_USER_LIMIT
+            });
+          }
+        }
+      } catch (userError) {
+        console.log('User lookup failed, continuing as guest:', userError.message);
+        // Continue as guest if user lookup fails
       }
     }
 
-    // Call deployed Python service
-    const pyRes = await axios.post(`${PYTHON_AI_URL}/chat`, { question });
-    const answer = pyRes.data.answer;
-
-    let questionData = { question, answer };
-    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
-      questionData.user = userId;
-      // Increment usage for this user
-      await User.findByIdAndUpdate(userId, { $inc: { usage: 1 } });
+    if (!canChat) {
+      return res.status(403).json({ message: 'Usage limit reached' });
     }
-    const q = await Question.create(questionData);
-    res.json({ answer, question: q });
+
+    // Call deployed Python service
+    try {
+      const pyRes = await axios.post(`${PYTHON_AI_URL}/chat`, { question }, {
+        timeout: 30000 // 30 second timeout
+      });
+      const answer = pyRes.data.answer;
+
+      // Save question and answer
+      let questionData = { 
+        question, 
+        answer,
+        userType, // Track if it was a guest or registered user
+        createdAt: new Date()
+      };
+
+      // Only add user reference if we have a valid user
+      if (user) {
+        questionData.user = userId;
+        // Increment usage for registered users only
+        try {
+          await User.findByIdAndUpdate(userId, { $inc: { usage: 1 } });
+        } catch (updateError) {
+          console.log('Failed to update user usage, but continuing:', updateError.message);
+        }
+      }
+
+      const q = await Question.create(questionData);
+      res.json({ 
+        answer, 
+        question: q,
+        userType,
+        usage: user ? user.usage + 1 : null // Return updated usage for registered users
+      });
+
+    } catch (pythonError) {
+      console.error('Python AI service error:', pythonError.message);
+      throw new Error('AI service temporarily unavailable. Please try again.');
+    }
+
   } catch (err) {
-    res.status(500).json({ message: 'AI error', error: err.message });
+    console.error('Chat error:', err);
+    res.status(500).json({ 
+      message: err.message || 'AI error',
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    });
   }
 });
 
@@ -319,23 +365,36 @@ router.post('/user/:id/avatar', upload.single('avatar'), async (req, res) => {
   }
 });
 
-// --- ENHANCED USER USAGE ROUTE WITH DEBUGGING ---
-// Get usage data for a user
+// Get usage data for a user (modified to handle guest users)
 router.get('/user/:id/usage', async (req, res) => {
   const startTime = Date.now();
   const userId = req.params.id;
   
   try {
     console.log(`🔍 [USAGE REQUEST] Starting usage fetch for user: ${userId}`);
-    console.log(`🔍 [USAGE REQUEST] MongoDB connection state: ${mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'}`);
+    
+    // Handle guest/demo users
+    if (!userId || userId === 'demo' || userId === 'guest') {
+      return res.json({ 
+        usage: 0, 
+        isSubscribed: false,
+        userType: 'guest',
+        message: 'Guest user - unlimited usage',
+        timestamp: new Date().toISOString(),
+        processingTime: Date.now() - startTime
+      });
+    }
     
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       console.log(`❌ [USAGE REQUEST] Invalid ObjectId format: ${userId}`);
-      return res.status(400).json({ 
-        message: 'Invalid user ID format',
-        userId: userId,
-        timestamp: new Date().toISOString()
+      return res.json({ 
+        usage: 0, 
+        isSubscribed: false,
+        userType: 'guest',
+        message: 'Invalid user ID, treating as guest',
+        timestamp: new Date().toISOString(),
+        processingTime: Date.now() - startTime
       });
     }
     
@@ -345,21 +404,18 @@ router.get('/user/:id/usage', async (req, res) => {
     
     if (!user) {
       console.log(`❌ [USAGE REQUEST] User not found in database: ${userId}`);
-      // Check if any users exist at all
-      const totalUsers = await User.countDocuments();
-      console.log(`🔍 [USAGE REQUEST] Total users in database: ${totalUsers}`);
-      
-      return res.status(404).json({ 
-        message: 'User not found',
-        userId: userId,
-        totalUsersInDb: totalUsers,
-        timestamp: new Date().toISOString()
+      // Return guest usage instead of error
+      return res.json({ 
+        usage: 0, 
+        isSubscribed: false,
+        userType: 'guest',
+        message: 'User not found, treating as guest',
+        timestamp: new Date().toISOString(),
+        processingTime: Date.now() - startTime
       });
     }
     
     console.log(`✅ [USAGE REQUEST] Found user: ${user.name} (${user.email})`);
-    console.log(`🔍 [USAGE REQUEST] User usage: ${user.usage}`);
-    console.log(`🔍 [USAGE REQUEST] User subscription:`, user.subscription);
     
     // Check and reset usage if needed
     const updatedUser = await checkAndResetUsage(user);
@@ -371,6 +427,7 @@ router.get('/user/:id/usage', async (req, res) => {
       subscription: updatedUser.subscription,
       usageResetAt: updatedUser.usageResetAt,
       userName: updatedUser.name,
+      userType: 'registered',
       timestamp: new Date().toISOString(),
       processingTime: Date.now() - startTime
     };
@@ -381,14 +438,14 @@ router.get('/user/:id/usage', async (req, res) => {
   } catch (err) {
     const processingTime = Date.now() - startTime;
     console.error(`❌ [USAGE REQUEST] Error after ${processingTime}ms:`, err);
-    console.error(`❌ [USAGE REQUEST] Error stack:`, err.stack);
-    console.error(`❌ [USAGE REQUEST] MongoDB state:`, mongoose.connection.readyState);
     
-    res.status(500).json({ 
-      message: 'Error fetching usage', 
-      error: err.message,
-      userId: userId,
-      mongoState: mongoose.connection.readyState,
+    // Return guest usage on error instead of failing
+    res.json({ 
+      usage: 0, 
+      isSubscribed: false,
+      userType: 'guest',
+      message: 'Error fetching user data, treating as guest',
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Database error',
       processingTime: processingTime,
       timestamp: new Date().toISOString()
     });
