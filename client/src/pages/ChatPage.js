@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import { useTheme } from '../ThemeContext';
 import { 
   Send, 
   Paperclip, 
@@ -17,7 +18,7 @@ import {
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const FREE_USER_LIMIT = 10; // Keep in sync with backend
 
-const styles = {
+const getStyles = (theme) => ({
   chatWrapper: {
     maxWidth: 800,
     margin: '0 auto',
@@ -25,18 +26,27 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     minHeight: 600,
-    background: '#ffffff',
+    background: theme === 'dark' ? '#1e293b' : '#ffffff',
     borderRadius: 16,
-    boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
-    border: '1px solid #e5e7eb',
+    boxShadow: theme === 'dark' 
+      ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+      : '0 4px 24px rgba(0, 0, 0, 0.08)',
+    border: theme === 'dark' 
+      ? '1px solid rgba(148, 163, 184, 0.2)' 
+      : '1px solid #e5e7eb',
     overflow: 'hidden',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    transition: 'all 0.3s ease-in-out',
   },
   
   usageBar: {
     padding: '12px 24px',
-    background: 'linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%)',
-    borderBottom: '1px solid #e5e7eb',
+    background: theme === 'dark' 
+      ? 'linear-gradient(90deg, #0f172a 0%, #1e293b 100%)'
+      : 'linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%)',
+    borderBottom: theme === 'dark' 
+      ? '1px solid rgba(148, 163, 184, 0.2)' 
+      : '1px solid #e5e7eb',
     fontSize: 14,
     fontWeight: 600,
     textAlign: 'center',
@@ -47,17 +57,19 @@ const styles = {
   },
   
   usageBarSubscribed: {
-    color: '#059669',
+    color: theme === 'dark' ? '#10b981' : '#059669',
   },
   
   usageBarFree: {
-    color: '#4f46e5',
+    color: theme === 'dark' ? '#6366f1' : '#4f46e5',
   },
   
   usageWarning: {
-    background: '#fef3c7',
-    color: '#92400e',
-    border: '1px solid #fde68a',
+    background: theme === 'dark' ? 'rgba(251, 191, 36, 0.1)' : '#fef3c7',
+    color: theme === 'dark' ? '#fbbf24' : '#92400e',
+    border: theme === 'dark' 
+      ? '1px solid rgba(251, 191, 36, 0.2)' 
+      : '1px solid #fde68a',
     borderRadius: 8,
     margin: '16px 24px',
     padding: '12px 16px',
@@ -71,40 +83,44 @@ const styles = {
   },
   
   debugBar: {
-    background: '#f9fafb',
-    border: '1px solid #e5e7eb',
+    background: theme === 'dark' ? '#0f172a' : '#f9fafb',
+    border: theme === 'dark' 
+      ? '1px solid rgba(148, 163, 184, 0.2)' 
+      : '1px solid #e5e7eb',
     borderRadius: 8,
     margin: '16px 24px',
     padding: '12px 16px',
     fontSize: 12,
     fontFamily: 'monospace',
-    color: '#374151',
+    color: theme === 'dark' ? '#cbd5e1' : '#374151',
   },
   
   debugSection: {
     marginBottom: 8,
     paddingBottom: 8,
-    borderBottom: '1px solid #e5e7eb',
+    borderBottom: theme === 'dark' 
+      ? '1px solid rgba(148, 163, 184, 0.2)' 
+      : '1px solid #e5e7eb',
   },
   
   debugLabel: {
     fontWeight: 600,
-    color: '#1f2937',
+    color: theme === 'dark' ? '#f8fafc' : '#1f2937',
     display: 'inline-block',
     minWidth: 120,
   },
   
   debugValue: {
-    color: '#6b7280',
+    color: theme === 'dark' ? '#94a3b8' : '#6b7280',
   },
   
   debugError: {
-    color: '#dc2626',
+    color: theme === 'dark' ? '#f87171' : '#dc2626',
     fontWeight: 500,
   },
   
   debugSuccess: {
-    color: '#059669',
+    color: theme === 'dark' ? '#34d399' : '#059669',
     fontWeight: 500,
   },
   
@@ -113,7 +129,7 @@ const styles = {
     minHeight: 400,
     maxHeight: 500,
     overflowY: 'auto',
-    background: '#fafafa',
+    background: theme === 'dark' ? '#0f172a' : '#fafafa',
     padding: '24px',
     display: 'flex',
     flexDirection: 'column',
@@ -134,14 +150,23 @@ const styles = {
     width: 36,
     height: 36,
     borderRadius: 8,
-    background: role === 'user' ? '#4f46e5' : '#ffffff',
-    border: role === 'user' ? 'none' : '2px solid #e5e7eb',
+    background: role === 'user' 
+      ? (theme === 'dark' ? '#6366f1' : '#4f46e5')
+      : (theme === 'dark' ? '#334155' : '#ffffff'),
+    border: role === 'user' 
+      ? 'none' 
+      : (theme === 'dark' 
+          ? '2px solid rgba(148, 163, 184, 0.3)' 
+          : '2px solid #e5e7eb'),
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: role === 'user' ? '#ffffff' : '#6b7280',
+    color: role === 'user' 
+      ? '#ffffff' 
+      : (theme === 'dark' ? '#cbd5e1' : '#6b7280'),
     flexShrink: 0,
     marginTop: 2,
+    transition: 'all 0.2s ease-in-out',
   }),
   
   messageContent: role => ({
@@ -152,21 +177,36 @@ const styles = {
   }),
   
   bubble: role => ({
-    background: role === 'user' ? '#4f46e5' : '#ffffff',
-    color: role === 'user' ? '#ffffff' : '#1f2937',
+    background: role === 'user' 
+      ? (theme === 'dark' ? '#6366f1' : '#4f46e5')
+      : (theme === 'dark' ? '#334155' : '#ffffff'),
+    color: role === 'user' 
+      ? '#ffffff' 
+      : (theme === 'dark' ? '#f8fafc' : '#1f2937'),
     borderRadius: role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
     padding: '12px 16px',
     fontSize: 15,
     lineHeight: 1.5,
-    boxShadow: role === 'user' ? '0 2px 8px rgba(79, 70, 229, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.08)',
-    border: role === 'user' ? 'none' : '1px solid #e5e7eb',
+    boxShadow: role === 'user' 
+      ? (theme === 'dark' 
+          ? '0 4px 12px rgba(99, 102, 241, 0.25)' 
+          : '0 2px 8px rgba(79, 70, 229, 0.15)')
+      : (theme === 'dark' 
+          ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+          : '0 2px 8px rgba(0, 0, 0, 0.08)'),
+    border: role === 'user' 
+      ? 'none' 
+      : (theme === 'dark' 
+          ? '1px solid rgba(148, 163, 184, 0.2)' 
+          : '1px solid #e5e7eb'),
     wordBreak: 'break-word',
     position: 'relative',
+    transition: 'all 0.2s ease-in-out',
   }),
   
   messageMeta: role => ({
     fontSize: 12,
-    color: '#9ca3af',
+    color: theme === 'dark' ? '#94a3b8' : '#9ca3af',
     display: 'flex',
     alignItems: 'center',
     gap: 4,
@@ -179,7 +219,9 @@ const styles = {
     maxHeight: 150,
     borderRadius: 8,
     marginTop: 8,
-    border: '1px solid #e5e7eb',
+    border: theme === 'dark' 
+      ? '1px solid rgba(148, 163, 184, 0.3)' 
+      : '1px solid #e5e7eb',
     objectFit: 'cover',
   },
   
@@ -187,9 +229,11 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: 12,
-    background: '#ffffff',
+    background: theme === 'dark' ? '#1e293b' : '#ffffff',
     padding: '20px 24px',
-    borderTop: '1px solid #e5e7eb',
+    borderTop: theme === 'dark' 
+      ? '1px solid rgba(148, 163, 184, 0.2)' 
+      : '1px solid #e5e7eb',
   },
   
   inputContainer: {
@@ -197,15 +241,19 @@ const styles = {
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
-    background: '#f9fafb',
+    background: theme === 'dark' ? '#0f172a' : '#f9fafb',
     borderRadius: 12,
-    border: '1px solid #e5e7eb',
+    border: theme === 'dark' 
+      ? '1px solid rgba(148, 163, 184, 0.2)' 
+      : '1px solid #e5e7eb',
     transition: 'border-color 0.2s, box-shadow 0.2s',
   },
   
   inputContainerFocused: {
-    borderColor: '#4f46e5',
-    boxShadow: '0 0 0 3px rgba(79, 70, 229, 0.1)',
+    borderColor: theme === 'dark' ? '#6366f1' : '#4f46e5',
+    boxShadow: theme === 'dark' 
+      ? '0 0 0 3px rgba(99, 102, 241, 0.2)' 
+      : '0 0 0 3px rgba(79, 70, 229, 0.1)',
   },
   
   input: {
@@ -215,7 +263,10 @@ const styles = {
     background: 'transparent',
     fontSize: 15,
     outline: 'none',
-    color: '#1f2937',
+    color: theme === 'dark' ? '#f8fafc' : '#1f2937',
+    '::placeholder': {
+      color: theme === 'dark' ? '#64748b' : '#9ca3af',
+    },
   },
   
   fileButton: {
@@ -225,17 +276,20 @@ const styles = {
     width: 40,
     height: 40,
     borderRadius: 8,
-    background: '#f3f4f6',
-    border: '1px solid #d1d5db',
+    background: theme === 'dark' ? '#334155' : '#f3f4f6',
+    border: theme === 'dark' 
+      ? '1px solid rgba(148, 163, 184, 0.3)' 
+      : '1px solid #d1d5db',
     cursor: 'pointer',
     transition: 'all 0.2s',
-    color: '#6b7280',
+    color: theme === 'dark' ? '#cbd5e1' : '#6b7280',
   },
   
   fileButtonHover: {
-    background: '#e5e7eb',
-    borderColor: '#9ca3af',
-    color: '#4b5563',
+    background: theme === 'dark' ? '#475569' : '#e5e7eb',
+    borderColor: theme === 'dark' ? '#64748b' : '#9ca3af',
+    color: theme === 'dark' ? '#f1f5f9' : '#4b5563',
+    transform: 'translateY(-1px)',
   },
   
   sendButton: {
@@ -245,7 +299,7 @@ const styles = {
     width: 40,
     height: 40,
     borderRadius: 8,
-    background: '#4f46e5',
+    background: theme === 'dark' ? '#6366f1' : '#4f46e5',
     border: 'none',
     cursor: 'pointer',
     transition: 'all 0.2s',
@@ -253,15 +307,17 @@ const styles = {
   },
   
   sendButtonDisabled: {
-    background: '#d1d5db',
+    background: theme === 'dark' ? '#475569' : '#d1d5db',
     cursor: 'not-allowed',
-    color: '#9ca3af',
+    color: theme === 'dark' ? '#64748b' : '#9ca3af',
   },
   
   sendButtonHover: {
-    background: '#4338ca',
+    background: theme === 'dark' ? '#5b21b6' : '#4338ca',
     transform: 'translateY(-1px)',
-    boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)',
+    boxShadow: theme === 'dark' 
+      ? '0 6px 20px rgba(99, 102, 241, 0.4)' 
+      : '0 4px 12px rgba(79, 70, 229, 0.3)',
   },
   
   loadingContainer: {
@@ -270,17 +326,19 @@ const styles = {
     justifyContent: 'center',
     gap: 12,
     padding: '16px',
-    color: '#6b7280',
+    color: theme === 'dark' ? '#94a3b8' : '#6b7280',
     fontSize: 14,
     fontWeight: 500,
   },
   
   error: {
-    background: '#fef2f2',
-    border: '1px solid #fecaca',
+    background: theme === 'dark' ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+    border: theme === 'dark' 
+      ? '1px solid rgba(239, 68, 68, 0.2)' 
+      : '1px solid #fecaca',
     borderRadius: 12,
     padding: '12px 16px',
-    color: '#dc2626',
+    color: theme === 'dark' ? '#f87171' : '#dc2626',
     fontSize: 14,
     fontWeight: 500,
     display: 'flex',
@@ -293,12 +351,16 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-    background: '#ffffff',
+    background: theme === 'dark' ? '#334155' : '#ffffff',
     padding: '12px 16px',
     borderRadius: '18px 18px 18px 4px',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-    border: '1px solid #e5e7eb',
-    color: '#6b7280',
+    boxShadow: theme === 'dark' 
+      ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
+      : '0 2px 8px rgba(0, 0, 0, 0.08)',
+    border: theme === 'dark' 
+      ? '1px solid rgba(148, 163, 184, 0.2)' 
+      : '1px solid #e5e7eb',
+    color: theme === 'dark' ? '#cbd5e1' : '#6b7280',
     fontSize: 14,
     fontStyle: 'italic',
   },
@@ -314,7 +376,9 @@ const styles = {
     height: 40,
     borderRadius: 6,
     objectFit: 'cover',
-    border: '1px solid #e5e7eb',
+    border: theme === 'dark' 
+      ? '1px solid rgba(148, 163, 184, 0.3)' 
+      : '1px solid #e5e7eb',
   },
   
   removePreview: {
@@ -324,7 +388,7 @@ const styles = {
     width: 18,
     height: 18,
     borderRadius: '50%',
-    background: '#dc2626',
+    background: theme === 'dark' ? '#ef4444' : '#dc2626',
     color: '#ffffff',
     border: 'none',
     cursor: 'pointer',
@@ -332,8 +396,9 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    transition: 'all 0.2s ease-in-out',
   },
-};
+});
 
 function LoadingSpinner({ size = 16 }) {
   return <Loader2 size={size} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />;
@@ -351,8 +416,11 @@ function DebugInfo({
   error, 
   backendHealth, 
   userId,
-  showDebug = true 
+  showDebug = true,
+  theme
 }) {
+  const styles = getStyles(theme);
+  
   if (!showDebug) return null;
   
   return (
@@ -370,6 +438,10 @@ function DebugInfo({
         <div>
           <span style={styles.debugLabel}>Environment:</span>
           <span style={styles.debugValue}>{process.env.NODE_ENV || 'development'}</span>
+        </div>
+        <div>
+          <span style={styles.debugLabel}>Theme:</span>
+          <span style={styles.debugValue}>{theme}</span>
         </div>
         <div>
           <span style={styles.debugLabel}>Current URL:</span>
@@ -427,6 +499,7 @@ function DebugInfo({
 }
 
 function ChatPage() {
+  const { theme } = useTheme();
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -445,6 +518,8 @@ function ChatPage() {
   const [debugInfo, setDebugInfo] = useState(null);
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  const styles = getStyles(theme);
 
   // Show debug mode only in development or when localStorage debug flag is set
   const showDebug = process.env.NODE_ENV === 'development' || localStorage.getItem('debug') === 'true';
@@ -466,6 +541,7 @@ function ChatPage() {
       nodeEnv: process.env.NODE_ENV,
       hasUserId: !!userId,
       currentUrl: window.location.href,
+      theme: theme,
       allEnvVars: Object.keys(process.env).filter(key => key.startsWith('REACT_APP_'))
     });
 
@@ -473,6 +549,7 @@ function ChatPage() {
     console.log('├── API URL:', API_URL);
     console.log('├── User ID:', userId || 'NOT SET');
     console.log('├── Environment:', process.env.NODE_ENV || 'development');
+    console.log('├── Theme:', theme);
     console.log('├── Current URL:', window.location.href);
     console.log('├── Available React Env Vars:', Object.keys(process.env).filter(key => key.startsWith('REACT_APP_')));
     console.log('└── LocalStorage keys:', Object.keys(localStorage));
@@ -521,7 +598,7 @@ function ChatPage() {
     };
 
     testBackend();
-  }, []);
+  }, [theme]);
 
   useEffect(() => {
     if (usage !== null && !isSubscribed) {
@@ -638,6 +715,7 @@ function ChatPage() {
           backendHealth={backendHealth}
           userId={localStorage.getItem('userId')}
           showDebug={showDebug}
+          theme={theme}
         />
       )}
       
@@ -738,7 +816,12 @@ function ChatPage() {
             onFocus={() => setInputFocused(true)}
             onBlur={() => setInputFocused(false)}
             placeholder="Type your question..."
-            style={styles.input}
+            style={{
+              ...styles.input,
+              '::placeholder': {
+                color: theme === 'dark' ? '#64748b' : '#9ca3af',
+              }
+            }}
             disabled={loading}
             aria-label="Type your question"
           />
@@ -797,7 +880,7 @@ function ChatPage() {
         }
         
         input::placeholder {
-          color: #9ca3af;
+          color: ${theme === 'dark' ? '#64748b' : '#9ca3af'};
         }
         
         /* Custom scrollbar */
@@ -806,16 +889,16 @@ function ChatPage() {
         }
         
         *::-webkit-scrollbar-track {
-          background: #f1f5f9;
+          background: ${theme === 'dark' ? '#1e293b' : '#f1f5f9'};
         }
         
         *::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
+          background: ${theme === 'dark' ? '#475569' : '#cbd5e1'};
           border-radius: 3px;
         }
         
         *::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
+          background: ${theme === 'dark' ? '#64748b' : '#94a3b8'};
         }
       `}</style>
     </div>

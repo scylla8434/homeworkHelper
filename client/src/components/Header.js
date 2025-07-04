@@ -2,160 +2,252 @@ import React, { useState, useRef } from 'react';
 import { useTheme } from '../ThemeContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
+import { 
+  Home, 
+  MessageCircle, 
+  CreditCard, 
+  Sun, 
+  Moon, 
+  User, 
+  Settings, 
+  LogOut,
+  ChevronDown,
+  UserPlus,
+  LogIn
+} from 'lucide-react';
 
 const styles = {
   header: {
     width: '100%',
-    minHeight: 64,
-    background: '#fff',
+    minHeight: 72,
+    background: 'rgba(255, 255, 255, 0.95)',
+    backdropFilter: 'blur(10px)',
     color: '#111827',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '0 16px',
+    padding: '0 24px',
     boxSizing: 'border-box',
-    boxShadow: '0 4px 16px 0 rgba(60,60,120,0.10)', // more depth
-    borderBottom: '1px solid #e5e7eb',
+    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+    borderBottom: '1px solid rgba(229, 231, 235, 0.8)',
     position: 'sticky',
     top: 0,
-    zIndex: 20,
-    flexWrap: 'wrap',
-    gap: 8,
-    backdropFilter: 'blur(2px)',
-    transition: 'box-shadow 0.3s',
+    zIndex: 50,
+    transition: 'all 0.2s ease-in-out',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   },
+  
+  leftSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 32,
+    flex: 1,
+    minWidth: 0,
+  },
+  
   logo: {
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
-    minWidth: 0,
-    flexShrink: 0,
-    fontWeight: 900,
-    fontSize: 22,
-    letterSpacing: 1,
+    gap: 12,
     textDecoration: 'none',
-    color: '#222',
+    color: '#111827',
+    flexShrink: 0,
+    transition: 'transform 0.2s ease-in-out',
   },
+  
+  logoHover: {
+    transform: 'scale(1.02)',
+  },
+  
   logoImg: {
-    width: 38,
-    height: 38,
-    borderRadius: 8,
+    width: 42,
+    height: 42,
+    borderRadius: 10,
     objectFit: 'cover',
-    boxShadow: '0 1px 4px 0 rgba(60,60,120,0.10)',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    border: '2px solid rgba(255, 255, 255, 0.8)',
   },
+  
+  logoText: {
+    fontWeight: 700,
+    fontSize: 20,
+    letterSpacing: '-0.025em',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  },
+  
   nav: {
     display: 'flex',
     alignItems: 'center',
-    gap: 16,
-    marginLeft: 16,
-    flexWrap: 'wrap',
+    gap: 8,
     flex: 1,
     minWidth: 0,
-    overflowX: 'auto',
   },
+  
   navLink: (isActive, isHovered) => ({
-    color: isActive ? '#6366f1' : isHovered ? '#374151' : '#222',
-    fontWeight: isActive ? 700 : 500,
-    fontSize: 16,
-    textDecoration: 'none',
-    padding: '6px 10px',
-    borderRadius: 8,
-    background: isActive ? 'rgba(99,102,241,0.12)' : isHovered ? 'rgba(99,102,241,0.06)' : 'none',
-    transition: 'background 0.2s, color 0.2s',
-    whiteSpace: 'nowrap',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    boxShadow: isActive ? '0 2px 8px 0 rgba(99,102,241,0.08)' : 'none',
-    outline: isActive ? '2px solid #6366f1' : 'none',
-  }),
-  themeToggle: {
-    background: 'none',
-    border: 'none',
-    color: '#3B82F6',
-    fontSize: 22,
-    cursor: 'pointer',
-    marginLeft: 10,
-    transition: 'color 0.3s',
-    flexShrink: 0,
-    borderRadius: 8,
-    padding: 6,
-    outline: 'none',
-  },
-  profileBtn: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    marginLeft: 18,
     display: 'flex',
     alignItems: 'center',
     gap: 8,
+    padding: '10px 16px',
+    borderRadius: 8,
+    textDecoration: 'none',
+    fontSize: 14,
+    fontWeight: 500,
+    color: isActive ? '#4f46e5' : isHovered ? '#374151' : '#6b7280',
+    background: isActive ? 'rgba(79, 70, 229, 0.1)' : isHovered ? 'rgba(107, 114, 128, 0.05)' : 'transparent',
+    border: isActive ? '1px solid rgba(79, 70, 229, 0.2)' : '1px solid transparent',
+    transition: 'all 0.2s ease-in-out',
+    whiteSpace: 'nowrap',
     position: 'relative',
-    padding: 0,
-    borderRadius: 18,
-    outline: 'none',
+    overflow: 'hidden',
+  }),
+  
+  rightSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 16,
+    flexShrink: 0,
   },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: '50%',
-    objectFit: 'cover',
-    background: '#e0e7ef',
+  
+  themeToggle: (isHovered) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontWeight: 700,
-    fontSize: 18,
-    color: '#6366f1',
-    boxShadow: '0 1px 4px 0 rgba(60,60,120,0.08)',
-    transition: 'box-shadow 0.2s',
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    border: '1px solid #e5e7eb',
+    background: isHovered ? '#f9fafb' : '#ffffff',
+    color: '#6b7280',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease-in-out',
+    boxShadow: isHovered ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    transform: isHovered ? 'translateY(-1px)' : 'translateY(0)',
+  }),
+  
+  profileSection: {
+    position: 'relative',
   },
+  
+  profileButton: (isHovered) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: '8px 12px',
+    borderRadius: 12,
+    border: 'none',
+    background: isHovered ? 'rgba(79, 70, 229, 0.05)' : 'transparent',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease-in-out',
+    outline: 'none',
+  }),
+  
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    objectFit: 'cover',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 600,
+    fontSize: 14,
+    color: '#ffffff',
+    boxShadow: '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
+    border: '2px solid rgba(255, 255, 255, 0.9)',
+  },
+  
+  userInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    maxWidth: 120,
+  },
+  
+  userName: {
+    fontWeight: 600,
+    fontSize: 14,
+    color: '#374151',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    maxWidth: 80,
+  },
+  
+  chevron: (isOpen) => ({
+    color: '#9ca3af',
+    transition: 'transform 0.2s ease-in-out',
+    transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+  }),
+  
   dropdown: {
     position: 'absolute',
-    top: 48,
+    top: 56,
     right: 0,
-    background: '#fff',
-    borderRadius: 10,
-    boxShadow: '0 8px 32px 0 rgba(60,60,120,0.16)',
-    minWidth: 160,
-    zIndex: 100,
-    padding: '8px 0',
-    display: 'flex',
-    flexDirection: 'column',
-    animation: 'fadeSlideDown 0.25s',
+    minWidth: 200,
+    background: '#ffffff',
+    borderRadius: 12,
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
     border: '1px solid #e5e7eb',
+    zIndex: 100,
+    overflow: 'hidden',
+    animation: 'fadeSlideDown 0.2s ease-out',
   },
-  dropdownItem: isHovered => ({
-    padding: '12px 22px',
-    color: isHovered ? '#6366f1' : '#222',
-    fontWeight: 500,
-    fontSize: 15,
-    textAlign: 'left',
-    background: isHovered ? 'rgba(99,102,241,0.08)' : 'none',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'background 0.2s, color 0.2s',
+  
+  dropdownSection: {
+    padding: '8px 0',
+    borderBottom: '1px solid #f3f4f6',
+  },
+  
+  dropdownItem: (isHovered) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
     width: '100%',
+    padding: '12px 16px',
+    border: 'none',
+    background: isHovered ? '#f9fafb' : 'transparent',
+    color: '#374151',
+    fontSize: 14,
+    fontWeight: 500,
     textDecoration: 'none',
-    outline: 'none',
-    borderRadius: 0,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease-in-out',
+    textAlign: 'left',
+  }),
+  
+  dropdownItemDanger: (isHovered) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    width: '100%',
+    padding: '12px 16px',
+    border: 'none',
+    background: isHovered ? '#fef2f2' : 'transparent',
+    color: isHovered ? '#dc2626' : '#6b7280',
+    fontSize: 14,
+    fontWeight: 500,
+    textDecoration: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease-in-out',
+    textAlign: 'left',
   }),
 };
 
-const navIcons = {
-  Home: '🏠',
-  Chat: '💬',
-  Pricing: '💳',
-};
-
-export default function Header() {
+function Header() {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = require('../AuthContext').useAuth();
+  const { user, logout } = useAuth(); // Fixed this line - removed require()
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [navHover, setNavHover] = useState('');
   const [dropdownHover, setDropdownHover] = useState('');
+  const [themeHover, setThemeHover] = useState(false);
+  const [profileHover, setProfileHover] = useState(false);
+  const [logoHover, setLogoHover] = useState(false);
   const dropdownRef = useRef();
   const [userName, setUserName] = useState(user?.name || user?.email || '');
   const [userAvatar, setUserAvatar] = useState(user?.avatar);
@@ -189,56 +281,194 @@ export default function Header() {
 
   const handleLogout = () => {
     logout();
+    setDropdownOpen(false);
   };
+
+  const navigationItems = [
+    { path: '/', label: 'Home', icon: Home },
+    { path: '/chat', label: 'Chat', icon: MessageCircle },
+    { path: '/pricing', label: 'Pricing', icon: CreditCard },
+  ];
 
   return (
     <header style={styles.header}>
-      <Link to="/" style={styles.logo}>
-        <img src="/logo.jpg" alt="Logo" style={styles.logoImg} />
-        <span style={{display:'none'}}>Homework Helper</span>
-      </Link>
-      <nav style={styles.nav}>
-        <Link to="/" style={styles.navLink(location.pathname === '/', navHover==='home')}
-          onMouseEnter={()=>setNavHover('home')} onMouseLeave={()=>setNavHover('')}>{navIcons.Home} Home</Link>
-        <Link to="/chat" style={styles.navLink(location.pathname === '/chat', navHover==='chat')}
-          onMouseEnter={()=>setNavHover('chat')} onMouseLeave={()=>setNavHover('')}>{navIcons.Chat} Chat</Link>
-        <Link to="/pricing" style={styles.navLink(location.pathname === '/pricing', navHover==='pricing')}
-          onMouseEnter={()=>setNavHover('pricing')} onMouseLeave={()=>setNavHover('')}>{navIcons.Pricing} Pricing</Link>
-      </nav>
-      <button style={styles.themeToggle} onClick={toggleTheme} title="Toggle dark/light mode" tabIndex={0}>
-        {theme === 'dark' ? '🌙' : '☀️'}
-      </button>
-      <div style={{marginLeft:8, position:'relative'}} ref={dropdownRef}>
-        <button style={styles.profileBtn} onClick={() => setDropdownOpen(o => !o)} aria-label="Profile menu" tabIndex={0}>
-          {userAvatar ? (
-            <img src={userAvatar} alt="Avatar" style={styles.avatar} />
-          ) : (
-            <span style={styles.avatar}>{userName[0]?.toUpperCase() || <span role="img" aria-label="user">👤</span>}</span>
-          )}
-          <span style={{fontWeight:700, color:'#6366f1', fontSize:16, marginLeft:6, maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{userName}</span>
-        </button>
-        {dropdownOpen && (
-          <div style={styles.dropdown}>
-            {isLoggedIn ? (
-              <>
-                <Link to="/profile" style={styles.dropdownItem(dropdownHover==='profile')}
-                  onMouseEnter={()=>setDropdownHover('profile')} onMouseLeave={()=>setDropdownHover('')}>Profile</Link>
-                <Link to="/settings" style={styles.dropdownItem(dropdownHover==='settings')}
-                  onMouseEnter={()=>setDropdownHover('settings')} onMouseLeave={()=>setDropdownHover('')}>Settings</Link>
-                <button style={styles.dropdownItem(dropdownHover==='logout')} onMouseEnter={()=>setDropdownHover('logout')} onMouseLeave={()=>setDropdownHover('')} onClick={handleLogout}>Logout</button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" style={styles.dropdownItem(dropdownHover==='login')}
-                  onMouseEnter={()=>setDropdownHover('login')} onMouseLeave={()=>setDropdownHover('')}>Login</Link>
-                <Link to="/register" style={styles.dropdownItem(dropdownHover==='register')}
-                  onMouseEnter={()=>setDropdownHover('register')} onMouseLeave={()=>setDropdownHover('')}>Register</Link>
-              </>
-            )}
-          </div>
-        )}
+      <div style={styles.leftSection}>
+        <Link 
+          to="/" 
+          style={{
+            ...styles.logo,
+            ...(logoHover ? styles.logoHover : {})
+          }}
+          onMouseEnter={() => setLogoHover(true)}
+          onMouseLeave={() => setLogoHover(false)}
+        >
+          <img src="/logo.jpg" alt="EduEdge Logo" style={styles.logoImg} />
+          <span style={styles.logoText}>EduEdge</span>
+        </Link>
+        
+        <nav style={styles.nav}>
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            const isHovered = navHover === item.path;
+            
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                style={styles.navLink(isActive, isHovered)}
+                onMouseEnter={() => setNavHover(item.path)}
+                onMouseLeave={() => setNavHover('')}
+              >
+                <Icon size={16} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
-      <style>{`@keyframes fadeSlideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+      
+      <div style={styles.rightSection}>
+        <button
+          style={styles.themeToggle(themeHover)}
+          onClick={toggleTheme}
+          onMouseEnter={() => setThemeHover(true)}
+          onMouseLeave={() => setThemeHover(false)}
+          title="Toggle theme"
+          aria-label="Toggle between light and dark theme"
+        >
+          {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+        </button>
+        
+        <div style={styles.profileSection} ref={dropdownRef}>
+          <button
+            style={styles.profileButton(profileHover)}
+            onClick={() => setDropdownOpen(prev => !prev)}
+            onMouseEnter={() => setProfileHover(true)}
+            onMouseLeave={() => setProfileHover(false)}
+            aria-label="Profile menu"
+            aria-expanded={dropdownOpen}
+          >
+            {userAvatar ? (
+              <img src={userAvatar} alt="Profile" style={styles.avatar} />
+            ) : (
+              <div style={styles.avatar}>
+                {userName[0]?.toUpperCase() || <User size={16} />}
+              </div>
+            )}
+            
+            {isLoggedIn && (
+              <div style={styles.userInfo}>
+                <span style={styles.userName}>{userName}</span>
+                <ChevronDown size={16} style={styles.chevron(dropdownOpen)} />
+              </div>
+            )}
+            
+            {!isLoggedIn && (
+              <ChevronDown size={16} style={styles.chevron(dropdownOpen)} />
+            )}
+          </button>
+          
+          {dropdownOpen && (
+            <div style={styles.dropdown}>
+              {isLoggedIn ? (
+                <>
+                  <div style={styles.dropdownSection}>
+                    <Link
+                      to="/profile"
+                      style={styles.dropdownItem(dropdownHover === 'profile')}
+                      onMouseEnter={() => setDropdownHover('profile')}
+                      onMouseLeave={() => setDropdownHover('')}
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <User size={16} />
+                      Profile
+                    </Link>
+                    <Link
+                      to="/settings"
+                      style={styles.dropdownItem(dropdownHover === 'settings')}
+                      onMouseEnter={() => setDropdownHover('settings')}
+                      onMouseLeave={() => setDropdownHover('')}
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <Settings size={16} />
+                      Settings
+                    </Link>
+                  </div>
+                  <div style={styles.dropdownSection}>
+                    <button
+                      style={styles.dropdownItemDanger(dropdownHover === 'logout')}
+                      onMouseEnter={() => setDropdownHover('logout')}
+                      onMouseLeave={() => setDropdownHover('')}
+                      onClick={handleLogout}
+                    >
+                      <LogOut size={16} />
+                      Logout
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div style={styles.dropdownSection}>
+                  <Link
+                    to="/login"
+                    style={styles.dropdownItem(dropdownHover === 'login')}
+                    onMouseEnter={() => setDropdownHover('login')}
+                    onMouseLeave={() => setDropdownHover('')}
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <LogIn size={16} />
+                    Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    style={styles.dropdownItem(dropdownHover === 'register')}
+                    onMouseEnter={() => setDropdownHover('register')}
+                    onMouseLeave={() => setDropdownHover('')}
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <UserPlus size={16} />
+                    Register
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <style>{`
+        @keyframes fadeSlideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-8px) scale(0.98);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        @media (max-width: 768px) {
+          header {
+            padding: 0 16px !important;
+          }
+          
+          nav {
+            gap: 4px !important;
+          }
+          
+          .logo-text {
+            display: none;
+          }
+          
+          .user-name {
+            display: none;
+          }
+        }
+      `}</style>
     </header>
   );
 }
+
+// Make sure to export as default
+export default Header;
